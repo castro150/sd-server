@@ -1,0 +1,23 @@
+{
+  "name": "sd-server",
+  "version": "1.0.0",
+  "description": "Simple-Docfy Server",
+  "main": "index.js",
+  "scripts": {
+    "start": "node ./bin/www",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Rafael Carneiro de Castro",
+  "repository": "castro150/to-def",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.17.1",
+    "cookie-parser": "^1.4.3",
+    "express": "^4.15.2",
+    "express-jwt": "^5.1.0",
+    "mongoose": "^4.8.6",
+    "morgan": "^1.8.1",
+    "passport": "^0.3.2",
+    "passport-local": "^1.0.0"
+  }
+}
