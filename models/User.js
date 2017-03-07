@@ -24,11 +24,10 @@ function validPassword(password) {
 
 UserSchema.methods.generateJWT = generateJWT;
 function generateJWT() {
-  // set expiration to 60 days
-  // TODO mudar a expiration date
+  // set expiration to 20 minutes
   var today = new Date();
   var exp = new Date(today);
-  exp.setDate(today.getDate() + 60);
+  exp.setMinutes(today.getMinutes() + 20);
 
   return jwt.sign({
     _id: this._id,
