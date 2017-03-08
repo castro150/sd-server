@@ -1,3 +1,4 @@
+var properties = require('properties-reader')('./config/application.properties');
 var mongoose = require('mongoose');
 var crypto = require('crypto');
 var jwt = require('jsonwebtoken');
@@ -33,10 +34,7 @@ function generateJWT() {
     _id: this._id,
     username: this.username,
     exp: parseInt(exp.getTime() / 1000),
-  }, 'SECRET');
-  // TODO é recomendável deixar este segundo argumento em uma variável
-  // de ambiente, fora da base do código, porque é o segredo usado para
-  // gerar os tokens.
+  }, properties.get('jwt.secret'));
 }
 
 mongoose.model('User', UserSchema);

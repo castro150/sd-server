@@ -1,6 +1,7 @@
 /**
  * External dependencies
  */
+var properties = require('properties-reader')('./config/application.properties');
 var express = require('express');
 var path = require('path');
 var logger = require('morgan');
@@ -48,4 +49,6 @@ app.use(function(err, req, res, next) {
 
 module.exports = app;
 
-mongoose.connect('mongodb://localhost/sd-server');
+var dbServer = properties.get('mongodb.db.server');
+var dbName = properties.get('mongodb.db.name');
+mongoose.connect('mongodb://' + dbServer + '/' + dbName);

@@ -1,3 +1,4 @@
+var properties = require('properties-reader')('./config/application.properties');
 var express = require('express');
 var router = express.Router();
 
@@ -7,11 +8,8 @@ var jwt = require('express-jwt');
 
 var User = mongoose.model('User');
 
-var auth = jwt({ secret: 'SECRET', userProperty: 'payload' });
-// TODO é recomendável deixar o secret em uma variável de ambiente
-// (igual ao de Users.js), fora da base do código, porque é o segredo
-// usado para gerar os tokens. "userProperty" define qual propriedade
-// em "req" vai ser colocado os payload do token.
+// userProperty defines what propertie will receive the token on 'req'
+var auth = jwt({ secret: properties.get('jwt.secret'), userProperty: 'payload' });
 
 router.get('/health', function(req, res, next) {
   res.json('Simple-Docfy Server alive!');
