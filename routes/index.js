@@ -53,4 +53,19 @@ router.post('/login', function(req, res, next) {
   })(req, res, next);
 });
 
+var jwt = require('jsonwebtoken');
+router.post('/token', function(req, res, next) {
+  jwt.verify(req.body.token, properties.get('jwt.secret'), function(err, user) {
+    if (err) { return next(err); }
+
+    var today = new Date();
+    var exp = new Date(today);
+    exp.setMinutes(today.getMinutes() + 20);
+    user.exp = parseInt(exp.getTime() / 1000);
+    var newToken = jwt.sign(user, properties.get('jwt.secret'));
+
+    res.json({ token: newToken });
+  });
+});
+
 module.exports = router;
