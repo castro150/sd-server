@@ -49,6 +49,6 @@ app.use(function(err, req, res, next) {
 
 module.exports = app;
 
-var dbServer = properties.get('mongodb.db.server');
+var dbHost = properties.get('mongodb.db.host');
 var dbName = properties.get('mongodb.db.name');
-mongoose.connect('mongodb://' + dbServer + '/' + dbName);
+mongoose.connect('mongodb://' + dbHost + '/' + dbName);
