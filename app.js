@@ -1,3 +1,6 @@
+// TODO colocar o 'use strict', ver onde se deve colocar
+require('app-module-path').addPath(__dirname + '/');
+
 /**
  * External dependencies
  */
