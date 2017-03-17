@@ -12,6 +12,16 @@ var User = mongoose.model('User');
 // userProperty defines what propertie will receive the token on 'req'
 var auth = jwt({ secret: properties.get('jwt.secret'), userProperty: 'payload' });
 
+/*
+TODO uma forma de usar o index
+routes/yourfile.js
+var routes = require("./routes");
+
+routes/index.js
+exports.something = require("./routes/something.js");
+exports.others = require("./routes/others.js");
+*/
+
 router.get('/health', function(req, res, next) {
   res.json('Simple-Docfy Server alive!');
 });
@@ -59,7 +69,8 @@ router.post('/token', function(req, res, next) {
     user.exp = parseInt(exp.getTime() / 1000);
     var newToken = jwt.sign(user, properties.get('jwt.secret'));
 
-    res.json({ token: newToken });
+// TODO testar com o return
+    return res.json({ token: newToken });
   });
 });
 
