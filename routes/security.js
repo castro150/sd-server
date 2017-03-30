@@ -5,14 +5,19 @@ var passport = require('passport');
 var jwt = require('express-jwt');
 
 var properties = require('properties-reader')('./config/application.properties');
+var msg = require('properties-reader')('./config/messages.properties');
 var SecurityService = require('services/security.js');
 
 // userProperty defines what propertie will receive the token on 'req'
 var auth = jwt({ secret: properties.get('jwt.secret'), userProperty: 'payload' });
 
+var fillAllFields = msg.get('security.login.fill.all.fields');
+
 router.post('/register', function(req, res, next) {
   if (!req.body.username || !req.body.password) {
-    return res.status(400).json({ message: 'Please fill out all fields.' });
+    var err = new Error(fillAllFields);
+    err.status = 400;
+    return next(err);
   }
 
   SecurityService.register(req.body.username, req.body.password, function(err, user) {
@@ -24,7 +29,9 @@ router.post('/register', function(req, res, next) {
 
 router.post('/login', function(req, res, next) {
   if (!req.body.username || !req.body.password) {
-    return res.status(400).json({ message: 'Please fill out all fields.' });
+    var err = new Error(fillAllFields);
+    err.status = 400;
+    return next(err);
   }
 
   passport.authenticate('local', function(err, user, info) {

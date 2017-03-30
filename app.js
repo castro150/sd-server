@@ -48,7 +48,7 @@ app.use(function(err, req, res, next) {
   // render the error page
   res.status(err.status || 500);
   // TODO responder o erro com o .json, porque a página é angular no client
-  res.render('error');
+  res.json({ message: err.message });
 });
 
 module.exports = app;

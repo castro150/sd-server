@@ -2,8 +2,11 @@ var mongoose = require('mongoose');
 var jwtoken = require('jsonwebtoken');
 
 var properties = require('properties-reader')('./config/application.properties');
+var msg = require('properties-reader')('./config/messages.properties');
 
 var User = mongoose.model('User');
+
+var userAlreadyExists = msg.get('security.register.user.already.exists');
 
 exports.register = function(username, password, callback) {
   var user = new User();
@@ -12,7 +15,10 @@ exports.register = function(username, password, callback) {
   user.setPassword(password);
 
   user.save(function(err) {
-    if (err) { return callback(err); }
+    if (err && err instanceof Error) {
+      err.message = err.code === 11000 ? userAlreadyExists : err.message;
+      return callback(err);
+    }
 
     return callback(null, user);
   });
