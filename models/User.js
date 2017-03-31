@@ -1,3 +1,5 @@
+'use strict'
+
 var properties = require('properties-reader')('./config/application.properties');
 var mongoose = require('mongoose');
 var crypto = require('crypto');

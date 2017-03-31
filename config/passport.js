@@ -1,3 +1,5 @@
+'use strict'
+
 /**
  * Doc: http://passportjs.org/docs
  */
