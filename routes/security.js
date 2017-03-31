@@ -2,7 +2,6 @@
 
 var express = require('express');
 var router = express.Router();
-var mongoose = require('mongoose');
 var passport = require('passport');
 var jwt = require('express-jwt');
 
@@ -17,9 +16,7 @@ var fillAllFields = msg.get('security.login.fill.all.fields');
 
 router.post('/register', function(req, res, next) {
   if (!req.body.username || !req.body.password) {
-    var err = new Error(fillAllFields);
-    err.status = 400;
-    return next(err);
+    return next(createError(fillAllFields, 400));
   }
 
   SecurityService.register(req.body.username, req.body.password, function(err, user) {
@@ -31,9 +28,7 @@ router.post('/register', function(req, res, next) {
 
 router.post('/login', function(req, res, next) {
   if (!req.body.username || !req.body.password) {
-    var err = new Error(fillAllFields);
-    err.status = 400;
-    return next(err);
+    return next(createError(fillAllFields, 400));
   }
 
   passport.authenticate('local', function(err, user, info) {
@@ -54,5 +49,11 @@ router.post('/token', auth, function(req, res, next) {
     return res.json({ token: newToken });
   });
 });
+
+var createError = function(msg, status) {
+  var err = new Error(msg);
+  err.status = status;
+  return err;
+};
 
 module.exports = router;

@@ -17,7 +17,7 @@ exports.register = function(username, password, callback) {
   user.setPassword(password);
 
   user.save(function(err) {
-    if (err && err instanceof Error) {
+    if (err) {
       err.message = err.code === 11000 ? userAlreadyExists : err.message;
       return callback(err);
     }

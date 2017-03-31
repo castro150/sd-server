@@ -18,6 +18,7 @@ var passport = require('passport');
  * Internal dependencies
  */
 require('./models/User');
+require('./models/Customer');
 require('./config/passport');
 var index = require('./routes/index');
 
