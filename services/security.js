@@ -5,6 +5,7 @@ var jwtoken = require('jsonwebtoken');
 
 var properties = require('properties-reader')('./config/application.properties');
 var msg = require('properties-reader')('./config/messages.properties');
+var logger = require('config/logger.js');
 
 var User = mongoose.model('User');
 
@@ -18,10 +19,11 @@ exports.register = function(username, password, callback) {
 
   user.save(function(err) {
     if (err) {
-      err.message = err.code === 11000 ? userAlreadyExists : err.message;
+      err.name = err.code === 11000 ? userAlreadyExists : err.name;
       return callback(err);
     }
 
+    logger.debug('New user registered: ' + user.username);
     return callback(null, user);
   });
 };
@@ -35,6 +37,7 @@ exports.renewToken = function(oldToken, callback) {
     exp.setMinutes(today.getMinutes() + 20);
     user.exp = parseInt(exp.getTime() / 1000);
     var newToken = jwtoken.sign(user, properties.get('jwt.secret'));
+    logger.debug('New token for user: ' + user.username);
 
     return callback(null, newToken);
   });
