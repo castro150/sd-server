@@ -4,7 +4,7 @@
  * Module dependencies.
  */
 var app = require('../app');
-var debug = require('debug')('sd-server:server');
+var logger = require('../config/logger');
 var http = require('http');
 
 /**
@@ -79,5 +79,5 @@ function onListening() {
   var bind = typeof addr === 'string'
     ? 'pipe ' + addr
     : 'port ' + addr.port;
-  debug('Listening on ' + bind);
+  logger.info('Server listening on ' + bind);
 }

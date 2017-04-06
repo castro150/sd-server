@@ -8,7 +8,6 @@ require('app-module-path').addPath(__dirname + '/');
 var properties = require('properties-reader')('./config/application.properties');
 var express = require('express');
 var path = require('path');
-var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var mongoose = require('mongoose');
@@ -20,11 +19,12 @@ var passport = require('passport');
 require('./models/User');
 require('./models/Customer');
 require('./config/passport');
+var logger = require('./config/logger');
 var index = require('./routes/index');
 
 var app = express();
 
-app.use(logger('dev'));
+app.use(require('morgan')('short', { 'stream': logger.stream }));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());

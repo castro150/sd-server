@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node ./bin/www",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "debug": "node-debug ./bin/www --debug-brk"
+    "debug": "node-debug ./bin/www --debug-brk",
+    "debug-log": "DEBUG=sd-server:server,express* node-debug ./bin/www --debug-brk"
   },
   "author": "Rafael Carneiro de Castro",
   "repository": "castro150/to-def",
@@ -21,6 +22,7 @@
     "morgan": "^1.8.1",
     "passport": "^0.3.2",
     "passport-local": "^1.0.0",
-    "properties-reader": "0.0.15"
+    "properties-reader": "0.0.15",
+    "winston": "^2.3.1"
   }
 }
