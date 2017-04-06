@@ -34,7 +34,7 @@ exports.renewToken = function(oldToken, callback) {
 
     var today = new Date();
     var exp = new Date(today);
-    exp.setMinutes(today.getMinutes() + 20);
+    exp.setMinutes(today.getMinutes() + 1000);
     user.exp = parseInt(exp.getTime() / 1000);
     var newToken = jwtoken.sign(user, properties.get('jwt.secret'));
     logger.debug('New token for user: ' + user.username);
