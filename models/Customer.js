@@ -4,10 +4,12 @@ var mongoose = require('mongoose');
 
 var CustomerSchema = new mongoose.Schema({
   number: Number,
+  alterNumber: Number,
   name: String,
   status: String,
   type: String,
   cpf: String,
+  startServiceDate: Date,
   address: String,
   district: String,
   city: String,
