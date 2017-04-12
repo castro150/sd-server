@@ -48,6 +48,9 @@ var CustomerSchema = new mongoose.Schema({
 	crmCro: String,
 	registryOffice: String,
 	obs: String,
+	stateTax: String,
+	irpj: String,
+	cssl: String,
 	accessoryObligations: [{
 		name: String,
 		activationDate: Date
