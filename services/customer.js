@@ -28,6 +28,30 @@ exports.create = function(customerProperties, callback) {
 	});
 };
 
+exports.findAllActive = function(callback) {
+	var query = Customer.find({
+		status: CustomerStatus.ACTIVE
+	}).sort({
+		number: 1
+	}).select({
+		number: 1,
+		name: 1,
+		type: 1,
+		cpf: 1,
+		cnpj: 1
+	});
+
+	logger.debug('Finding all active customers');
+	query.exec(function(err, customers) {
+		if (err) {
+			return callback(err);
+		}
+
+		logger.debug(customers.length + ' activer customers found');
+		return callback(null, customers);
+	});
+};
+
 var validateExistisActiveNumber = function(newCustomer, callback) {
 	var query = Customer.find({
 		number: newCustomer.number,

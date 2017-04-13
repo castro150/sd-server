@@ -29,6 +29,16 @@ router.post('/', auth, function(req, res, next) {
 	});
 });
 
+router.get('/active', auth, function(req, res, next) {
+	CustomerService.findAllActive(function(err, customers) {
+		if (err) {
+			return next(err);
+		}
+
+		return res.status(200).json(customers);
+	});
+});
+
 var createError = function(name, msg, status) {
 	var err = new Error(msg);
 	err.name = name;
