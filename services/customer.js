@@ -10,39 +10,45 @@ var CustomerStatus = require('models/CustomerStatus.js');
 var activeNumberExistsMsg = msg.get('customer.create.active.number.exists');
 
 exports.create = function(customerProperties, callback) {
-  var newCustomer = new Customer(customerProperties);
+	var newCustomer = new Customer(customerProperties);
 
-  validateExistisActiveNumber(newCustomer, function(err) {
-    if (err) { return callback(err); }
+	validateExistisActiveNumber(newCustomer, function(err) {
+		if (err) {
+			return callback(err);
+		}
 
-    newCustomer.save(function(err) {
-      if (err) { return callback(err); }
+		newCustomer.save(function(err) {
+			if (err) {
+				return callback(err);
+			}
 
-      logger.debug('New customer created: ' + newCustomer.number + ' - ' + newCustomer.name);
-      return callback(null, newCustomer);
-    });
-  });
+			logger.debug('New customer created: ' + newCustomer.number + ' - ' + newCustomer.name);
+			return callback(null, newCustomer);
+		});
+	});
 };
 
 var validateExistisActiveNumber = function(newCustomer, callback) {
-  var query = Customer.find({
-    number: newCustomer.number,
-    status: CustomerStatus.ACTIVE
-  });
+	var query = Customer.find({
+		number: newCustomer.number,
+		status: CustomerStatus.ACTIVE
+	});
 
-  query.exec(function(err, customer) {
-    if (err) { return callback(err); }
-    if (customer.length !== 0) {
-      return callback(createError(activeNumberExistsMsg, 'Create Customer: number ' + newCustomer.number + ' in use for active customer', 400));
-    }
+	query.exec(function(err, customer) {
+		if (err) {
+			return callback(err);
+		}
+		if (customer.length !== 0) {
+			return callback(createError(activeNumberExistsMsg, 'Create Customer: number ' + newCustomer.number + ' in use for active customer', 400));
+		}
 
-    return callback(null);
-  });
+		return callback(null);
+	});
 };
 
 var createError = function(name, msg, status) {
-  var err = new Error(msg);
-  err.name = name;
-  err.status = status;
-  return err;
+	var err = new Error(msg);
+	err.name = name;
+	err.status = status;
+	return err;
 };
