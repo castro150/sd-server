@@ -35,6 +35,7 @@ exports.findAllActive = function(callback) {
 		number: 1
 	}).select({
 		number: 1,
+		alterNumber: 1,
 		name: 1,
 		type: 1,
 		cpf: 1,
