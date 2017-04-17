@@ -53,6 +53,23 @@ exports.findAllActive = function(callback) {
 	});
 };
 
+exports.findById = function(id, callback) {
+	var query = Customer.findOne({
+		_id: new mongoose.Types.ObjectId(id)
+	});
+
+	logger.debug('Finding customer with id ' + id);
+	query.exec(function(err, customer) {
+		if (err) {
+			return callback(err);
+		}
+
+		if (customer) logger.debug('User found for id ' + id);
+		else logger.debug('User not found for id ' + id);
+		return callback(null, customer);
+	});
+};
+
 var validateExistisActiveNumber = function(newCustomer, callback) {
 	var query = Customer.find({
 		number: newCustomer.number,

@@ -39,6 +39,17 @@ router.get('/active', auth, function(req, res, next) {
 	});
 });
 
+router.get('/:id', auth, function(req, res, next) {
+	CustomerService.findById(req.params.id, function(err, customer) {
+		if (err) {
+			return next(err);
+		}
+
+		var status = customer ? 200 : 204;
+		return res.status(status).json(customer);
+	});
+});
+
 var createError = function(name, msg, status) {
 	var err = new Error(msg);
 	err.name = name;
