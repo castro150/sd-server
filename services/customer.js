@@ -54,9 +54,7 @@ exports.findAllActive = function(callback) {
 };
 
 exports.findById = function(id, callback) {
-	var query = Customer.findOne({
-		_id: new mongoose.Types.ObjectId(id)
-	});
+	var query = Customer.findById(id);
 
 	logger.debug('Finding customer with id ' + id);
 	query.exec(function(err, customer) {
