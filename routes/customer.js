@@ -50,6 +50,16 @@ router.get('/:id', auth, function(req, res, next) {
 	});
 });
 
+router.put('/:id', auth, function(req, res, next) {
+	CustomerService.update(req.params.id, req.body, function(err, customer) {
+		if (err) {
+			return next(err);
+		}
+
+		return res.status(200).json(customer);
+	});
+});
+
 var createError = function(name, msg, status) {
 	var err = new Error(msg);
 	err.name = name;

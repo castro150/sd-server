@@ -68,6 +68,22 @@ exports.findById = function(id, callback) {
 	});
 };
 
+exports.update = function(id, customer, callback) {
+	logger.debug('Updating customer with id ' + id);
+	Customer.findByIdAndUpdate(id, {
+		$set: customer
+	}, {
+		new: true
+	}, function(err, customer) {
+		if (err) {
+			return callback(err);
+		}
+
+		logger.debug('Customer with id ' + id + ' updated');
+		callback(null, customer);
+	});
+}
+
 var validateExistisActiveNumber = function(newCustomer, callback) {
 	var query = Customer.find({
 		number: newCustomer.number,
