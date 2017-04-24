@@ -37,7 +37,7 @@ var CustomerSchema = new mongoose.Schema({
 	cae: String,
 	nirc: String,
 	cnae: String,
-	cnae2: String,
+	cnae2: [String],
 	syndicateName: String,
 	syndicateCode: String,
 	accessCode: String,
