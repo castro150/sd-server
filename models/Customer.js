@@ -31,6 +31,14 @@ var CustomerSchema = new mongoose.Schema({
 		cpf: String,
 		participation: String
 	}],
+	syndics: [{
+		name: String,
+		email: String,
+		tel: String,
+		period: String,
+		identity: String,
+		cpf: String
+	}],
 	cei: String,
 	gpsCode: String,
 	management: String,
