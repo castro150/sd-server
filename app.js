@@ -12,6 +12,7 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var mongoose = require('mongoose');
 var passport = require('passport');
+var cors = require('cors');
 
 /**
  * Internal dependencies
@@ -24,6 +25,7 @@ var index = require('./routes/index');
 
 var app = express();
 
+app.use(cors());
 app.use(require('morgan')('short', {
 	'stream': logger.stream
 }));
