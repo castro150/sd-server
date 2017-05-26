@@ -4,7 +4,7 @@ var mongoose = require('mongoose');
 
 var CustomerSchema = new mongoose.Schema({
 	number: Number,
-	alterNumber: Number,
+	alterNumber: String,
 	name: String,
 	companyName: String,
 	status: String,
