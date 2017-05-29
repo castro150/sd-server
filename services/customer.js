@@ -48,7 +48,7 @@ exports.findAllActive = function(callback) {
 			return callback(err);
 		}
 
-		logger.debug(customers.length + ' activer customers found');
+		logger.debug(customers.length + ' active customers found');
 		return callback(null, customers);
 	});
 };

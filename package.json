@@ -7,7 +7,10 @@
     "start": "node ./bin/www",
     "test": "echo \"Error: no test specified\" && exit 1",
     "debug": "node-debug ./bin/www --debug-brk",
-    "debug-log": "DEBUG=sd-server:server,express* node-debug ./bin/www --debug-brk"
+    "debug-log": "DEBUG=sd-server:server,express* node-debug ./bin/www --debug-brk",
+    "unit-tests": "mocha specs/** --require specs/helpers/bootstrap.js --reporter spec",
+    "debug-unit-tests": "mocha specs/** --require specs/helpers/bootstrap.js --reporter spec --debug-brk",
+    "test-coverage": "istanbul cover _mocha specs/** --require specs/helpers/bootstrap.js --reporter spec"
   },
   "author": "Rafael Carneiro de Castro",
   "repository": "castro150/to-def",
@@ -15,15 +18,19 @@
   "dependencies": {
     "app-module-path": "^2.2.0",
     "body-parser": "^1.17.1",
+    "chai": "^3.5.0",
     "cookie-parser": "^1.4.3",
     "cors": "^2.8.3",
     "express": "^4.15.2",
     "express-jwt": "^5.1.0",
+    "istanbul": "^0.4.5",
+    "mocha": "^3.4.1",
     "mongoose": "^4.8.6",
     "morgan": "^1.8.1",
     "passport": "^0.3.2",
     "passport-local": "^1.0.0",
     "properties-reader": "0.0.15",
+    "sinon": "^2.3.1",
     "winston": "^2.3.1"
   }
 }
