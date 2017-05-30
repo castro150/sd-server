@@ -1,6 +1,5 @@
 var sinon = require('sinon');
 
-var msg = require('properties-reader');
 var mongoose = require('mongoose');
 
 var logger = require('config/logger.js');

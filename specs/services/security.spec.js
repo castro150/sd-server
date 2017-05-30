@@ -3,8 +3,6 @@ var sinon = require('sinon');
 var mongoose = require('mongoose');
 var jwtoken = require('jsonwebtoken');
 
-var properties = require('properties-reader');
-var msg = require('properties-reader')('./config/messages.properties');
 var logger = require('config/logger.js');
 var User = mongoose.model('User');
 var SecurityService = require('services/security.js');
@@ -33,7 +31,7 @@ describe('Security Service', function() {
 			assert.isNull(err);
 			assert.isNotNull(user);
 			assert.equal(user.username, username);
-			assert.isNotNull(user.salt)
+			assert.isNotNull(user.salt);
 			assert.isNotNull(user.hash);
 
 			done();
@@ -77,23 +75,50 @@ describe('Security Service', function() {
 		});
 	});
 
-	// TODO
 	it('renew token with success', function(done) {
+		var clock = sinon.useFakeTimers();
+
 		var oldToken = '1234567';
+		var renewedToken = '7654321';
 		var user = {};
 		user.username = 'user';
 		user.password = 'pwd';
 
 		var loggerStub = sandbox.stub(logger, 'debug');
+		var signStub = sandbox.stub(jwtoken, 'sign').returns(renewedToken);
+		sandbox.stub(jwtoken, 'verify').yields(null, user);
 
 		SecurityService.renewToken(oldToken, function(err, newToken) {
-			// assert(loggerStub.calledWith('New token for user: ' + user.username));
-			// 
-			// assert.isNull(err);
-			// assert.isNotNull(user);
-			// assert.equal(user.username, username);
-			// assert.isNotNull(user.salt)
-			// assert.isNotNull(user.hash);
+			assert(loggerStub.calledWith('New token for user: ' + user.username));
+
+			var capturedUser = signStub.getCall(0).args[0];
+			var expectedExp = new Date();
+			expectedExp.setMinutes(new Date().getMinutes() + 1000);
+
+			assert.equal(capturedUser.username, user.username);
+			assert.equal(capturedUser.password, user.password);
+			assert.equal(capturedUser.exp, parseInt(expectedExp.getTime() / 1000));
+
+			assert.isNull(err);
+			assert.equal(newToken, renewedToken);
+
+			clock.restore();
+			done();
+		});
+	});
+
+	it('sign error while trying to renew token', function(done) {
+		var oldToken = '1234567';
+		var signError = 'error to sing';
+
+		var loggerStub = sandbox.stub(logger, 'debug');
+		sandbox.stub(jwtoken, 'verify').yields(signError);
+
+		SecurityService.renewToken(oldToken, function(err, newToken) {
+			assert.isFalse(loggerStub.called);
+
+			assert.equal(err, signError);
+			assert.isUndefined(newToken);
 
 			done();
 		});
