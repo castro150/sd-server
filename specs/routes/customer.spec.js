@@ -6,7 +6,7 @@ var router = require('routes/customer.js');
 
 var token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI1OGJkYjJlNTQ4MzAyYTE0MDM2NWQ4YTEiLCJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjo3MjY3ODU5MDM5LCJpYXQiOjE0OTQ2MTEwMzl9.9_TRSXWdII-GFTJCZlPB9Hs0j15VRyEYGAlI1JiGRQs';
 
-buildRequest = function(method, url, needAuthorization) {
+var buildRequest = function(method, url, needAuthorization) {
 	var request = {};
 	request.method = method;
 	request.url = url;
@@ -18,7 +18,7 @@ buildRequest = function(method, url, needAuthorization) {
 	return http_mocks.createRequest(request);
 }
 
-buildResponse = function() {
+var buildResponse = function() {
 	return http_mocks.createResponse({
 		eventEmitter: require('events').EventEmitter
 	});
