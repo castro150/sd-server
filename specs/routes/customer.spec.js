@@ -4,19 +4,16 @@ var http_mocks = require('node-mocks-http');
 var CustomerService = require('services/customer.js');
 var router = require('routes/customer.js');
 
-var token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI1OGJkYjJlNTQ4MzAyYTE0MDM2NWQ4YTEiLCJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjo3MjY3ODU5MDM5LCJpYXQiOjE0OTQ2MTEwMzl9.9_TRSXWdII-GFTJCZlPB9Hs0j15VRyEYGAlI1JiGRQs';
-
-var buildRequest = function(method, url, needAuthorization) {
+var buildRequest = function(method, url) {
+	var token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI1OGJkYjJlNTQ4MzAyYTE0MDM2NWQ4YTEiLCJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjo3MjY3ODU5MDM5LCJpYXQiOjE0OTQ2MTEwMzl9.9_TRSXWdII-GFTJCZlPB9Hs0j15VRyEYGAlI1JiGRQs';
 	var request = {};
 	request.method = method;
 	request.url = url;
-	if (needAuthorization) {
-		request.headers = {};
-		request.headers.Authorization = 'Bearer ' + token;
-	}
+	request.headers = {};
+	request.headers.Authorization = 'Bearer ' + token;
 
 	return http_mocks.createRequest(request);
-}
+};
 
 var buildResponse = function() {
 	return http_mocks.createResponse({
@@ -25,6 +22,8 @@ var buildResponse = function() {
 };
 
 describe('Customer Routes', function() {
+	var request;
+	var response;
 	var sandbox;
 
 	beforeEach(function() {
@@ -36,18 +35,21 @@ describe('Customer Routes', function() {
 	});
 
 	describe('POST new customer', function() {
-		var request = buildRequest('POST', '/', true);
+		beforeEach(function() {
+			request = buildRequest('POST', '/');
+			response = buildResponse();
+		});
 
 		it('POST new customer with success', function(done) {
-			var response = buildResponse();
 			var validCustomer = {};
 			validCustomer.name = 'Master Cars';
 			validCustomer.number = 1;
-			sandbox.stub(CustomerService, 'create').yields(null, validCustomer);
+			var createStub = sandbox.stub(CustomerService, 'create').yields(null, validCustomer);
 
 			response.on('end', function() {
 				var data = JSON.parse(response._getData());
 
+				assert(createStub.calledWith(request.body));
 				assert.equal(response.statusCode, 201);
 				assert.equal(data.name, validCustomer.name);
 				assert.equal(data.number, validCustomer.number);
@@ -59,8 +61,6 @@ describe('Customer Routes', function() {
 		});
 
 		it('empty body error while POST new customer', function(done) {
-			var request = buildRequest('POST', '/', true);
-			var response = buildResponse();
 			request.body = null;
 
 			response.on('end', function() {
@@ -77,7 +77,6 @@ describe('Customer Routes', function() {
 		});
 
 		it('generic error while POST new customer', function(done) {
-			var response = buildResponse();
 			var genericError = 'internal server error';
 			sandbox.stub(CustomerService, 'create').yields(genericError);
 
@@ -94,10 +93,12 @@ describe('Customer Routes', function() {
 	});
 
 	describe('GET all active customers', function() {
-		var request = buildRequest('GET', '/active', true);
+		beforeEach(function() {
+			request = buildRequest('GET', '/active');
+			response = buildResponse();
+		});
 
 		it('GET active customers with success', function(done) {
-			var response = buildResponse();
 			var validCustomer = {};
 			validCustomer.name = 'Master Cars';
 			validCustomer.number = 1;
@@ -118,7 +119,6 @@ describe('Customer Routes', function() {
 		});
 
 		it('generic error while GET active customers', function(done) {
-			var response = buildResponse();
 			var genericError = 'internal server error';
 			sandbox.stub(CustomerService, 'findAllActive').yields(genericError);
 
@@ -135,10 +135,12 @@ describe('Customer Routes', function() {
 	});
 
 	describe('GET customer by id', function() {
-		var request = buildRequest('GET', '/1234567', true);
+		beforeEach(function() {
+			request = buildRequest('GET', '/1234567');
+			response = buildResponse();
+		});
 
 		it('GET customer by id with success', function(done) {
-			var response = buildResponse();
 			var validCustomer = {};
 			validCustomer.name = 'Master Cars';
 			validCustomer.number = 1;
@@ -159,7 +161,6 @@ describe('Customer Routes', function() {
 		});
 
 		it('no customer found while GET customer by id', function(done) {
-			var response = buildResponse();
 			var findStub = sandbox.stub(CustomerService, 'findById').yields(null, null);
 
 			response.on('end', function() {
@@ -176,7 +177,6 @@ describe('Customer Routes', function() {
 		});
 
 		it('generic error while GET customer by id', function(done) {
-			var response = buildResponse();
 			var genericError = 'internal server error';
 			sandbox.stub(CustomerService, 'findById').yields(genericError);
 
@@ -193,10 +193,12 @@ describe('Customer Routes', function() {
 	});
 
 	describe('PUT customer by id', function() {
-		var request = buildRequest('PUT', '/1234567', true);
+		beforeEach(function() {
+			request = buildRequest('PUT', '/1234567');
+			response = buildResponse();
+		});
 
 		it('PUT customer by id with success', function(done) {
-			var response = buildResponse();
 			var validCustomer = {};
 			validCustomer.name = 'Master Cars';
 			validCustomer.number = 1;
@@ -217,7 +219,6 @@ describe('Customer Routes', function() {
 		});
 
 		it('generic error while PUT customer by id', function(done) {
-			var response = buildResponse();
 			var genericError = 'internal server error';
 			sandbox.stub(CustomerService, 'update').yields(genericError);
 
