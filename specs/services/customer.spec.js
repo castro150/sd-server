@@ -6,6 +6,7 @@ var logger = require('config/logger.js');
 var CustomerStatus = require('models/CustomerStatus.js');
 var Customer = mongoose.model('Customer');
 var CustomerService = require('services/customer.js');
+var factories = require('specs/helpers/factories').customers;
 
 describe('Customer Service', function() {
 	var sandbox;
@@ -20,9 +21,7 @@ describe('Customer Service', function() {
 
 	describe('create customer', function() {
 		it('create new customer with success', function(done) {
-			var customerProperties = {};
-			customerProperties.name = 'Master Cars';
-			customerProperties.number = 1;
+			var customerProperties = factories.validCustomer;
 
 			var loggerStub = sandbox.stub(logger, 'debug');
 			var findCustomerStub = sandbox.stub(Customer, 'find').returns({
@@ -46,9 +45,7 @@ describe('Customer Service', function() {
 		});
 
 		it('error creating customer with existing number', function(done) {
-			var customerProperties = {};
-			customerProperties.name = 'Master Cars';
-			customerProperties.number = 1;
+			var customerProperties = factories.validCustomer;
 
 			var loggerStub = sandbox.stub(logger, 'debug');
 			var findCustomerStub = sandbox.stub(Customer, 'find').returns({
@@ -74,9 +71,7 @@ describe('Customer Service', function() {
 
 		it('error to execute query while creating customer', function(done) {
 			var queryError = 'query error'
-			var customerProperties = {};
-			customerProperties.name = 'Master Cars';
-			customerProperties.number = 1;
+			var customerProperties = factories.validCustomer;
 
 			var loggerStub = sandbox.stub(logger, 'debug');
 			var findCustomerStub = sandbox.stub(Customer, 'find').returns({
@@ -100,9 +95,7 @@ describe('Customer Service', function() {
 
 		it('error to save customer while creating customer', function(done) {
 			var saveError = 'save error'
-			var customerProperties = {};
-			customerProperties.name = 'Master Cars';
-			customerProperties.number = 1;
+			var customerProperties = factories.validCustomer;
 
 			var loggerStub = sandbox.stub(logger, 'debug');
 			var findCustomerStub = sandbox.stub(Customer, 'find').returns({
@@ -128,9 +121,7 @@ describe('Customer Service', function() {
 
 	describe('find all active customers', function() {
 		it('find all active customers with success', function(done) {
-			var validCustomer = {};
-			validCustomer.name = 'Master Cars';
-			validCustomer.number = 1;
+			var validCustomer = factories.validCustomer;
 
 			var loggerStub = sandbox.stub(logger, 'debug');
 			var findCustomerStub = sandbox.stub(Customer, 'find').returns({
@@ -161,9 +152,7 @@ describe('Customer Service', function() {
 
 		it('error to execute query while finding all active customers', function(done) {
 			var queryError = 'query error'
-			var validCustomer = {};
-			validCustomer.name = 'Master Cars';
-			validCustomer.number = 1;
+			var validCustomer = factories.validCustomer;
 
 			var loggerStub = sandbox.stub(logger, 'debug');
 			var findCustomerStub = sandbox.stub(Customer, 'find').returns({
@@ -193,9 +182,7 @@ describe('Customer Service', function() {
 	describe('find customer by id', function() {
 		it('find customer by id with success', function(done) {
 			var id = '1234567';
-			var validCustomer = {};
-			validCustomer.name = 'Master Cars';
-			validCustomer.number = 1;
+			var validCustomer = factories.validCustomer;
 
 			var loggerStub = sandbox.stub(logger, 'debug');
 			var findByIdStub = sandbox.stub(Customer, 'findById').returns({
@@ -256,9 +243,7 @@ describe('Customer Service', function() {
 	describe('update customer', function() {
 		it('update customer with success', function(done) {
 			var id = '1234567';
-			var validCustomer = {};
-			validCustomer.name = 'Master Cars';
-			validCustomer.number = 1;
+			var validCustomer = factories.validCustomer;
 
 			var loggerStub = sandbox.stub(logger, 'debug');
 			var updateCustomerStub = sandbox.stub(Customer, 'findByIdAndUpdate').yields(null, validCustomer);

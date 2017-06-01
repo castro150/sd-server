@@ -3,6 +3,7 @@ var http_mocks = require('node-mocks-http');
 
 var CustomerService = require('services/customer.js');
 var router = require('routes/customer.js');
+var factories = require('specs/helpers/factories').customers;
 
 var buildRequest = function(method, url) {
 	var token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI1OGJkYjJlNTQ4MzAyYTE0MDM2NWQ4YTEiLCJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjo3MjY3ODU5MDM5LCJpYXQiOjE0OTQ2MTEwMzl9.9_TRSXWdII-GFTJCZlPB9Hs0j15VRyEYGAlI1JiGRQs';
@@ -41,9 +42,7 @@ describe('Customer Routes', function() {
 		});
 
 		it('POST new customer with success', function(done) {
-			var validCustomer = {};
-			validCustomer.name = 'Master Cars';
-			validCustomer.number = 1;
+			var validCustomer = factories.validCustomer;
 			var createStub = sandbox.stub(CustomerService, 'create').yields(null, validCustomer);
 
 			response.on('end', function() {
@@ -99,9 +98,7 @@ describe('Customer Routes', function() {
 		});
 
 		it('GET active customers with success', function(done) {
-			var validCustomer = {};
-			validCustomer.name = 'Master Cars';
-			validCustomer.number = 1;
+			var validCustomer = factories.validCustomer;
 			sandbox.stub(CustomerService, 'findAllActive').yields(null, [validCustomer]);
 
 			response.on('end', function() {
@@ -141,9 +138,7 @@ describe('Customer Routes', function() {
 		});
 
 		it('GET customer by id with success', function(done) {
-			var validCustomer = {};
-			validCustomer.name = 'Master Cars';
-			validCustomer.number = 1;
+			var validCustomer = factories.validCustomer;
 			var findStub = sandbox.stub(CustomerService, 'findById').yields(null, validCustomer);
 
 			response.on('end', function() {
@@ -199,9 +194,7 @@ describe('Customer Routes', function() {
 		});
 
 		it('PUT customer by id with success', function(done) {
-			var validCustomer = {};
-			validCustomer.name = 'Master Cars';
-			validCustomer.number = 1;
+			var validCustomer = factories.validCustomer;
 			var updateStub = sandbox.stub(CustomerService, 'update').yields(null, validCustomer);
 
 			response.on('end', function() {
