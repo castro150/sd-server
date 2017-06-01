@@ -1,13 +1,13 @@
 'use strict'
 
-var express = require('express');
-var router = express.Router();
-var jwt = require('express-jwt');
+const express = require('express');
+const router = express.Router();
+const jwt = require('express-jwt');
 
-var properties = require('properties-reader')('./config/application.properties');
+let properties = require('properties-reader')('./config/application.properties');
 
 // userProperty defines what propertie will receive the token on 'req'
-var auth = jwt({
+let auth = jwt({
 	secret: properties.get('jwt.secret'),
 	userProperty: 'payload'
 });

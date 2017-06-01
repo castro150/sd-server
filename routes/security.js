@@ -1,22 +1,22 @@
 'use strict'
 
-var express = require('express');
-var router = express.Router();
-var passport = require('passport');
-var jwt = require('express-jwt');
+const express = require('express');
+const router = express.Router();
+const passport = require('passport');
+const jwt = require('express-jwt');
 
-var properties = require('properties-reader')('./config/application.properties');
-var msg = require('properties-reader')('./config/messages.properties');
-var logger = require('config/logger.js');
-var SecurityService = require('services/security.js');
+const properties = require('properties-reader')('./config/application.properties');
+const msg = require('properties-reader')('./config/messages.properties');
+const logger = require('config/logger.js');
+const SecurityService = require('services/security.js');
 
 // userProperty defines what propertie will receive the token on 'req'
-var auth = jwt({
+let auth = jwt({
 	secret: properties.get('jwt.secret'),
 	userProperty: 'payload'
 });
 
-var fillAllFields = msg.get('security.login.fill.all.fields');
+let fillAllFields = msg.get('security.login.fill.all.fields');
 
 router.post('/register', function(req, res, next) {
 	if (!req.body.username || !req.body.password) {
@@ -68,8 +68,8 @@ router.post('/token', auth, function(req, res, next) {
 	});
 });
 
-var createError = function(name, msg, status) {
-	var err = new Error(msg);
+let createError = function(name, msg, status) {
+	let err = new Error(msg);
 	err.name = name;
 	err.status = status;
 	return err;

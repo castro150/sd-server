@@ -1,15 +1,15 @@
-var sinon = require('sinon');
-var http_mocks = require('node-mocks-http');
+const sinon = require('sinon');
+const http_mocks = require('node-mocks-http');
 
-var passport = require('passport');
+const passport = require('passport');
 
-var SecurityService = require('services/security.js');
-var logger = require('config/logger.js');
-var router = require('routes/security.js');
+const SecurityService = require('services/security.js');
+const logger = require('config/logger.js');
+const router = require('routes/security.js');
 
-var buildRequest = function(method, url, needAuthorization) {
-	var token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI1OGJkYjJlNTQ4MzAyYTE0MDM2NWQ4YTEiLCJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjo3MjY3ODU5MDM5LCJpYXQiOjE0OTQ2MTEwMzl9.9_TRSXWdII-GFTJCZlPB9Hs0j15VRyEYGAlI1JiGRQs';
-	var request = {};
+let buildRequest = function(method, url, needAuthorization) {
+	let token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI1OGJkYjJlNTQ4MzAyYTE0MDM2NWQ4YTEiLCJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjo3MjY3ODU5MDM5LCJpYXQiOjE0OTQ2MTEwMzl9.9_TRSXWdII-GFTJCZlPB9Hs0j15VRyEYGAlI1JiGRQs';
+	let request = {};
 	request.method = method;
 	request.url = url;
 	if (needAuthorization) {
@@ -20,16 +20,16 @@ var buildRequest = function(method, url, needAuthorization) {
 	return http_mocks.createRequest(request);
 };
 
-var buildResponse = function() {
+let buildResponse = function() {
 	return http_mocks.createResponse({
 		eventEmitter: require('events').EventEmitter
 	});
 };
 
 describe('Security Routes', function() {
-	var request;
-	var response;
-	var sandbox;
+	let request;
+	let response;
+	let sandbox;
 
 	beforeEach(function() {
 		sandbox = sinon.sandbox.create();
@@ -46,18 +46,18 @@ describe('Security Routes', function() {
 		});
 
 		it('register new user with success', function(done) {
-			var token = '1234567';
-			var user = {
+			let token = '1234567';
+			let user = {
 				username: 'user',
 				password: 'pwd',
 				generateJWT: sinon.stub().returns(token)
 			};
 			request.body.username = user.username;
 			request.body.password = user.password;
-			var registerStub = sandbox.stub(SecurityService, 'register').yields(null, user);
+			let registerStub = sandbox.stub(SecurityService, 'register').yields(null, user);
 
 			response.on('end', function() {
-				var data = JSON.parse(response._getData());
+				let data = JSON.parse(response._getData());
 
 				assert(registerStub.calledWith(user.username, user.password));
 				assert.equal(response.statusCode, 200);
@@ -121,7 +121,7 @@ describe('Security Routes', function() {
 		});
 
 		it('generic error while registering new user', function(done) {
-			var genericError = 'internal server error';
+			let genericError = 'internal server error';
 			request.body.username = 'user';
 			request.body.password = 'pwd';
 			sandbox.stub(SecurityService, 'register').yields(genericError);
@@ -145,19 +145,19 @@ describe('Security Routes', function() {
 		});
 
 		it('login user with success', function(done) {
-			var token = '1234567';
-			var user = {
+			let token = '1234567';
+			let user = {
 				username: 'user',
 				password: 'pwd',
 				generateJWT: sinon.stub().returns(token)
 			};
 			request.body.username = user.username;
 			request.body.password = user.password;
-			var loginStub = sandbox.stub(passport, 'authenticate').yields(null, user).returns(sinon.stub());
-			var loggerStub = sandbox.stub(logger, 'debug');
+			let loginStub = sandbox.stub(passport, 'authenticate').yields(null, user).returns(sinon.stub());
+			let loggerStub = sandbox.stub(logger, 'debug');
 
 			response.on('end', function() {
-				var data = JSON.parse(response._getData());
+				let data = JSON.parse(response._getData());
 
 				assert(loginStub.calledWith('local'));
 				assert(loggerStub.calledWith(user.username + ' loged in.'));
@@ -222,7 +222,7 @@ describe('Security Routes', function() {
 		});
 
 		it('generic error while login user', function(done) {
-			var genericError = 'internal server error';
+			let genericError = 'internal server error';
 			request.body.username = 'user';
 			request.body.password = 'pwd';
 			sandbox.stub(passport, 'authenticate').yields(genericError).returns(sinon.stub());
@@ -239,16 +239,16 @@ describe('Security Routes', function() {
 		});
 
 		it('authentication error while login user', function(done) {
-			var authenticationError = 'authentication error';
+			let authenticationError = 'authentication error';
 			request.body.username = 'user';
 			request.body.password = 'pwd';
-			var loginStub = sandbox.stub(passport, 'authenticate').yields(null, null, {
+			let loginStub = sandbox.stub(passport, 'authenticate').yields(null, null, {
 				message: authenticationError
 			}).returns(sinon.stub());
-			var loggerStub = sandbox.stub(logger, 'warn');
+			let loggerStub = sandbox.stub(logger, 'warn');
 
 			response.on('end', function() {
-				var data = JSON.parse(response._getData());
+				let data = JSON.parse(response._getData());
 
 				assert(loginStub.calledWith('local'));
 				assert(loggerStub.calledWith('Failed to login user: ' + authenticationError));
@@ -269,12 +269,12 @@ describe('Security Routes', function() {
 		});
 
 		it('renew token with success', function(done) {
-			var newToken = '7654321';
+			let newToken = '7654321';
 			request.body.token = '1234567';
-			var registerStub = sandbox.stub(SecurityService, 'renewToken').yields(null, newToken);
+			let registerStub = sandbox.stub(SecurityService, 'renewToken').yields(null, newToken);
 
 			response.on('end', function() {
-				var data = JSON.parse(response._getData());
+				let data = JSON.parse(response._getData());
 
 				assert(registerStub.calledWith('1234567'));
 				assert.equal(response.statusCode, 200);
@@ -287,7 +287,7 @@ describe('Security Routes', function() {
 		});
 
 		it('generic error while renewing token', function(done) {
-			var genericError = 'internal server error';
+			let genericError = 'internal server error';
 			request.body.token = '1234567';
 			sandbox.stub(SecurityService, 'renewToken').yields(genericError);
 

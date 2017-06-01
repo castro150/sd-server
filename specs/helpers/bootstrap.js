@@ -1,7 +1,7 @@
-var path = require('path');
+const path = require('path');
 require('app-module-path').addPath(path.resolve());
 
-var chai = require('chai');
+const chai = require('chai');
 global.chai = chai;
 
 chai.config.includeStack = true;

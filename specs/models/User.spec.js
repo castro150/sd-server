@@ -1,12 +1,12 @@
-var sinon = require('sinon');
+const sinon = require('sinon');
 
-var mongoose = require('mongoose');
-var jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
 
-var User = mongoose.model('User');
+const User = mongoose.model('User');
 
 describe('User Model', function() {
-	var sandbox;
+	let sandbox;
 
 	beforeEach(function() {
 		sandbox = sinon.sandbox.create();
@@ -18,7 +18,7 @@ describe('User Model', function() {
 
 	describe('set password', function() {
 		it('set password with success', function(done) {
-			var user = new User();
+			let user = new User();
 
 			assert.isUndefined(user.salt);
 			assert.isUndefined(user.hash);
@@ -34,7 +34,7 @@ describe('User Model', function() {
 
 	describe('valid password', function() {
 		it('validate correct password with success', function(done) {
-			var user = new User();
+			let user = new User();
 			user.setPassword('pwd');
 
 			assert.isTrue(user.validPassword('pwd'));
@@ -43,7 +43,7 @@ describe('User Model', function() {
 		});
 
 		it('validate incorrect password with success', function(done) {
-			var user = new User();
+			let user = new User();
 			user.setPassword('pwd');
 
 			assert.isFalse(user.validPassword('incorrect-pwd'));
@@ -54,17 +54,17 @@ describe('User Model', function() {
 
 	describe('generate JWT', function() {
 		it('generate JWT with success', function(done) {
-			var clock = sinon.useFakeTimers();
+			let clock = sinon.useFakeTimers();
 
-			var renewedToken = '1234567';
-			var signStub = sandbox.stub(jwt, 'sign').returns(renewedToken);
+			let renewedToken = '1234567';
+			let signStub = sandbox.stub(jwt, 'sign').returns(renewedToken);
 
-			var user = new User();
+			let user = new User();
 			user.username = 'user';
-			var newToken = user.generateJWT();
+			let newToken = user.generateJWT();
 
-			var capturedUser = signStub.getCall(0).args[0];
-			var expectedExp = new Date();
+			let capturedUser = signStub.getCall(0).args[0];
+			let expectedExp = new Date();
 			expectedExp.setMinutes(new Date().getMinutes() + 1000);
 
 			assert.equal(newToken, renewedToken);

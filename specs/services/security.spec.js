@@ -1,14 +1,14 @@
-var sinon = require('sinon');
+const sinon = require('sinon');
 
-var mongoose = require('mongoose');
-var jwtoken = require('jsonwebtoken');
+const mongoose = require('mongoose');
+const jwtoken = require('jsonwebtoken');
 
-var logger = require('config/logger.js');
-var User = mongoose.model('User');
-var SecurityService = require('services/security.js');
+const logger = require('config/logger.js');
+const User = mongoose.model('User');
+const SecurityService = require('services/security.js');
 
 describe('Security Service', function() {
-	var sandbox;
+	let sandbox;
 
 	beforeEach(function() {
 		sandbox = sinon.sandbox.create();
@@ -20,10 +20,10 @@ describe('Security Service', function() {
 
 	describe('register user', function() {
 		it('register user with success', function(done) {
-			var username = 'user';
-			var password = 'pwd';
+			let username = 'user';
+			let password = 'pwd';
 
-			var loggerStub = sandbox.stub(logger, 'debug');
+			let loggerStub = sandbox.stub(logger, 'debug');
 			sandbox.stub(User.prototype, 'save').yields(null);
 
 			SecurityService.register(username, password, function(err, user) {
@@ -40,8 +40,8 @@ describe('Security Service', function() {
 		});
 
 		it('error while registering existing user', function(done) {
-			var username = 'user';
-			var password = 'pwd';
+			let username = 'user';
+			let password = 'pwd';
 
 			sandbox.stub(User.prototype, 'save').yields({
 				code: 11000
@@ -58,8 +58,8 @@ describe('Security Service', function() {
 		});
 
 		it('generic error while registering user', function(done) {
-			var username = 'user';
-			var password = 'pwd';
+			let username = 'user';
+			let password = 'pwd';
 
 			sandbox.stub(User.prototype, 'save').yields({
 				name: 'generic.error',
@@ -79,23 +79,23 @@ describe('Security Service', function() {
 
 	describe('renew token', function() {
 		it('renew token with success', function(done) {
-			var clock = sinon.useFakeTimers();
+			let clock = sinon.useFakeTimers();
 
-			var oldToken = '1234567';
-			var renewedToken = '7654321';
-			var user = {};
+			let oldToken = '1234567';
+			let renewedToken = '7654321';
+			let user = {};
 			user.username = 'user';
 			user.password = 'pwd';
 
-			var loggerStub = sandbox.stub(logger, 'debug');
-			var signStub = sandbox.stub(jwtoken, 'sign').returns(renewedToken);
+			let loggerStub = sandbox.stub(logger, 'debug');
+			let signStub = sandbox.stub(jwtoken, 'sign').returns(renewedToken);
 			sandbox.stub(jwtoken, 'verify').yields(null, user);
 
 			SecurityService.renewToken(oldToken, function(err, newToken) {
 				assert(loggerStub.calledWith('New token for user: ' + user.username));
 
-				var capturedUser = signStub.getCall(0).args[0];
-				var expectedExp = new Date();
+				let capturedUser = signStub.getCall(0).args[0];
+				let expectedExp = new Date();
 				expectedExp.setMinutes(new Date().getMinutes() + 1000);
 
 				assert.equal(capturedUser.username, user.username);
@@ -111,10 +111,10 @@ describe('Security Service', function() {
 		});
 
 		it('sign error while trying to renew token', function(done) {
-			var oldToken = '1234567';
-			var signError = 'error to sign';
+			let oldToken = '1234567';
+			let signError = 'error to sign';
 
-			var loggerStub = sandbox.stub(logger, 'debug');
+			let loggerStub = sandbox.stub(logger, 'debug');
 			sandbox.stub(jwtoken, 'verify').yields(signError);
 
 			SecurityService.renewToken(oldToken, function(err, newToken) {

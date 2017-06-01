@@ -1,18 +1,18 @@
 'use strict'
 
-var mongoose = require('mongoose');
-var jwtoken = require('jsonwebtoken');
+const mongoose = require('mongoose');
+const jwtoken = require('jsonwebtoken');
 
-var properties = require('properties-reader')('./config/application.properties');
-var msg = require('properties-reader')('./config/messages.properties');
-var logger = require('config/logger.js');
+const properties = require('properties-reader')('./config/application.properties');
+const msg = require('properties-reader')('./config/messages.properties');
+const logger = require('config/logger.js');
 
-var User = mongoose.model('User');
+const User = mongoose.model('User');
 
-var userAlreadyExists = msg.get('security.register.user.already.exists');
+let userAlreadyExists = msg.get('security.register.user.already.exists');
 
 exports.register = function(username, password, callback) {
-	var user = new User();
+	let user = new User();
 
 	user.username = username;
 	user.setPassword(password);
@@ -34,11 +34,11 @@ exports.renewToken = function(oldToken, callback) {
 			return callback(err);
 		}
 
-		var today = new Date();
-		var exp = new Date(today);
+		let today = new Date();
+		let exp = new Date(today);
 		exp.setMinutes(today.getMinutes() + 1000);
 		user.exp = parseInt(exp.getTime() / 1000);
-		var newToken = jwtoken.sign(user, properties.get('jwt.secret'));
+		let newToken = jwtoken.sign(user, properties.get('jwt.secret'));
 		logger.debug('New token for user: ' + user.username);
 
 		return callback(null, newToken);

@@ -1,13 +1,13 @@
-var sinon = require('sinon');
-var http_mocks = require('node-mocks-http');
+const sinon = require('sinon');
+const http_mocks = require('node-mocks-http');
 
-var CustomerService = require('services/customer.js');
-var router = require('routes/customer.js');
-var factories = require('specs/helpers/factories').customers;
+const CustomerService = require('services/customer.js');
+const router = require('routes/customer.js');
+const factories = require('specs/helpers/factories').customers;
 
-var buildRequest = function(method, url) {
-	var token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI1OGJkYjJlNTQ4MzAyYTE0MDM2NWQ4YTEiLCJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjo3MjY3ODU5MDM5LCJpYXQiOjE0OTQ2MTEwMzl9.9_TRSXWdII-GFTJCZlPB9Hs0j15VRyEYGAlI1JiGRQs';
-	var request = {};
+let buildRequest = function(method, url) {
+	let token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI1OGJkYjJlNTQ4MzAyYTE0MDM2NWQ4YTEiLCJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjo3MjY3ODU5MDM5LCJpYXQiOjE0OTQ2MTEwMzl9.9_TRSXWdII-GFTJCZlPB9Hs0j15VRyEYGAlI1JiGRQs';
+	let request = {};
 	request.method = method;
 	request.url = url;
 	request.headers = {};
@@ -16,16 +16,16 @@ var buildRequest = function(method, url) {
 	return http_mocks.createRequest(request);
 };
 
-var buildResponse = function() {
+let buildResponse = function() {
 	return http_mocks.createResponse({
 		eventEmitter: require('events').EventEmitter
 	});
 };
 
 describe('Customer Routes', function() {
-	var request;
-	var response;
-	var sandbox;
+	let request;
+	let response;
+	let sandbox;
 
 	beforeEach(function() {
 		sandbox = sinon.sandbox.create();
@@ -42,11 +42,11 @@ describe('Customer Routes', function() {
 		});
 
 		it('POST new customer with success', function(done) {
-			var validCustomer = factories.validCustomer;
-			var createStub = sandbox.stub(CustomerService, 'create').yields(null, validCustomer);
+			let validCustomer = factories.validCustomer;
+			let createStub = sandbox.stub(CustomerService, 'create').yields(null, validCustomer);
 
 			response.on('end', function() {
-				var data = JSON.parse(response._getData());
+				let data = JSON.parse(response._getData());
 
 				assert(createStub.calledWith(request.body));
 				assert.equal(response.statusCode, 201);
@@ -76,7 +76,7 @@ describe('Customer Routes', function() {
 		});
 
 		it('generic error while POST new customer', function(done) {
-			var genericError = 'internal server error';
+			let genericError = 'internal server error';
 			sandbox.stub(CustomerService, 'create').yields(genericError);
 
 			response.on('end', function() {
@@ -98,11 +98,11 @@ describe('Customer Routes', function() {
 		});
 
 		it('GET active customers with success', function(done) {
-			var validCustomer = factories.validCustomer;
+			let validCustomer = factories.validCustomer;
 			sandbox.stub(CustomerService, 'findAllActive').yields(null, [validCustomer]);
 
 			response.on('end', function() {
-				var data = JSON.parse(response._getData());
+				let data = JSON.parse(response._getData());
 
 				assert.equal(response.statusCode, 200);
 				assert.equal(data.length, 1);
@@ -116,7 +116,7 @@ describe('Customer Routes', function() {
 		});
 
 		it('generic error while GET active customers', function(done) {
-			var genericError = 'internal server error';
+			let genericError = 'internal server error';
 			sandbox.stub(CustomerService, 'findAllActive').yields(genericError);
 
 			response.on('end', function() {
@@ -138,11 +138,11 @@ describe('Customer Routes', function() {
 		});
 
 		it('GET customer by id with success', function(done) {
-			var validCustomer = factories.validCustomer;
-			var findStub = sandbox.stub(CustomerService, 'findById').yields(null, validCustomer);
+			let validCustomer = factories.validCustomer;
+			let findStub = sandbox.stub(CustomerService, 'findById').yields(null, validCustomer);
 
 			response.on('end', function() {
-				var data = JSON.parse(response._getData());
+				let data = JSON.parse(response._getData());
 
 				assert.equal(response.statusCode, 200);
 				assert(findStub.calledWith('1234567'));
@@ -156,10 +156,10 @@ describe('Customer Routes', function() {
 		});
 
 		it('no customer found while GET customer by id', function(done) {
-			var findStub = sandbox.stub(CustomerService, 'findById').yields(null, null);
+			let findStub = sandbox.stub(CustomerService, 'findById').yields(null, null);
 
 			response.on('end', function() {
-				var data = response._getData();
+				let data = response._getData();
 
 				assert.equal(response.statusCode, 204);
 				assert(findStub.calledWith('1234567'));
@@ -172,7 +172,7 @@ describe('Customer Routes', function() {
 		});
 
 		it('generic error while GET customer by id', function(done) {
-			var genericError = 'internal server error';
+			let genericError = 'internal server error';
 			sandbox.stub(CustomerService, 'findById').yields(genericError);
 
 			response.on('end', function() {
@@ -194,11 +194,11 @@ describe('Customer Routes', function() {
 		});
 
 		it('PUT customer by id with success', function(done) {
-			var validCustomer = factories.validCustomer;
-			var updateStub = sandbox.stub(CustomerService, 'update').yields(null, validCustomer);
+			let validCustomer = factories.validCustomer;
+			let updateStub = sandbox.stub(CustomerService, 'update').yields(null, validCustomer);
 
 			response.on('end', function() {
-				var data = JSON.parse(response._getData());
+				let data = JSON.parse(response._getData());
 
 				assert.equal(response.statusCode, 200);
 				assert(updateStub.calledWith('1234567'));
@@ -212,7 +212,7 @@ describe('Customer Routes', function() {
 		});
 
 		it('generic error while PUT customer by id', function(done) {
-			var genericError = 'internal server error';
+			let genericError = 'internal server error';
 			sandbox.stub(CustomerService, 'update').yields(genericError);
 
 			response.on('end', function() {

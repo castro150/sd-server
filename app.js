@@ -5,14 +5,14 @@ require('app-module-path').addPath(__dirname + '/');
 /**
  * External dependencies
  */
-var properties = require('properties-reader')('./config/application.properties');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
-var mongoose = require('mongoose');
-var passport = require('passport');
-var cors = require('cors');
+const properties = require('properties-reader')('./config/application.properties');
+const express = require('express');
+const path = require('path');
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
+const passport = require('passport');
+const cors = require('cors');
 
 /**
  * Internal dependencies
@@ -20,10 +20,10 @@ var cors = require('cors');
 require('./models/User');
 require('./models/Customer');
 require('./config/passport');
-var logger = require('./config/logger');
-var index = require('./routes/index');
+const logger = require('./config/logger');
+const index = require('./routes/index');
 
-var app = express();
+let app = express();
 
 app.use(cors());
 app.use(require('morgan')('short', {
@@ -42,7 +42,7 @@ app.use('/', index);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
-	var err = new Error('Not Found');
+	let err = new Error('Not Found');
 	err.status = 404;
 	next(err);
 });
@@ -63,6 +63,6 @@ app.use(function(err, req, res, next) {
 
 module.exports = app;
 
-var dbHost = properties.get('mongodb.db.host');
-var dbName = properties.get('mongodb.db.name');
+let dbHost = properties.get('mongodb.db.host');
+let dbName = properties.get('mongodb.db.name');
 mongoose.connect('mongodb://' + dbHost + '/' + dbName);

@@ -1,15 +1,15 @@
-var sinon = require('sinon');
+const sinon = require('sinon');
 
-var mongoose = require('mongoose');
+const mongoose = require('mongoose');
 
-var logger = require('config/logger.js');
-var CustomerStatus = require('models/CustomerStatus.js');
-var Customer = mongoose.model('Customer');
-var CustomerService = require('services/customer.js');
-var factories = require('specs/helpers/factories').customers;
+const logger = require('config/logger.js');
+const CustomerStatus = require('models/CustomerStatus.js');
+const Customer = mongoose.model('Customer');
+const CustomerService = require('services/customer.js');
+const factories = require('specs/helpers/factories').customers;
 
 describe('Customer Service', function() {
-	var sandbox;
+	let sandbox;
 
 	beforeEach(function() {
 		sandbox = sinon.sandbox.create();
@@ -21,10 +21,10 @@ describe('Customer Service', function() {
 
 	describe('create customer', function() {
 		it('create new customer with success', function(done) {
-			var customerProperties = factories.validCustomer;
+			let customerProperties = factories.validCustomer;
 
-			var loggerStub = sandbox.stub(logger, 'debug');
-			var findCustomerStub = sandbox.stub(Customer, 'find').returns({
+			let loggerStub = sandbox.stub(logger, 'debug');
+			let findCustomerStub = sandbox.stub(Customer, 'find').returns({
 				exec: sandbox.stub().yields(null, [])
 			});
 			sandbox.stub(Customer.prototype, 'save').yields(null);
@@ -45,10 +45,10 @@ describe('Customer Service', function() {
 		});
 
 		it('error creating customer with existing number', function(done) {
-			var customerProperties = factories.validCustomer;
+			let customerProperties = factories.validCustomer;
 
-			var loggerStub = sandbox.stub(logger, 'debug');
-			var findCustomerStub = sandbox.stub(Customer, 'find').returns({
+			let loggerStub = sandbox.stub(logger, 'debug');
+			let findCustomerStub = sandbox.stub(Customer, 'find').returns({
 				exec: sandbox.stub().yields(null, [{}])
 			});
 
@@ -70,11 +70,11 @@ describe('Customer Service', function() {
 		});
 
 		it('error to execute query while creating customer', function(done) {
-			var queryError = 'query error'
-			var customerProperties = factories.validCustomer;
+			let queryError = 'query error'
+			let customerProperties = factories.validCustomer;
 
-			var loggerStub = sandbox.stub(logger, 'debug');
-			var findCustomerStub = sandbox.stub(Customer, 'find').returns({
+			let loggerStub = sandbox.stub(logger, 'debug');
+			let findCustomerStub = sandbox.stub(Customer, 'find').returns({
 				exec: sandbox.stub().yields(queryError)
 			});
 
@@ -94,11 +94,11 @@ describe('Customer Service', function() {
 		});
 
 		it('error to save customer while creating customer', function(done) {
-			var saveError = 'save error'
-			var customerProperties = factories.validCustomer;
+			let saveError = 'save error'
+			let customerProperties = factories.validCustomer;
 
-			var loggerStub = sandbox.stub(logger, 'debug');
-			var findCustomerStub = sandbox.stub(Customer, 'find').returns({
+			let loggerStub = sandbox.stub(logger, 'debug');
+			let findCustomerStub = sandbox.stub(Customer, 'find').returns({
 				exec: sandbox.stub().yields(null, [])
 			});
 			sandbox.stub(Customer.prototype, 'save').yields(saveError);
@@ -121,10 +121,10 @@ describe('Customer Service', function() {
 
 	describe('find all active customers', function() {
 		it('find all active customers with success', function(done) {
-			var validCustomer = factories.validCustomer;
+			let validCustomer = factories.validCustomer;
 
-			var loggerStub = sandbox.stub(logger, 'debug');
-			var findCustomerStub = sandbox.stub(Customer, 'find').returns({
+			let loggerStub = sandbox.stub(logger, 'debug');
+			let findCustomerStub = sandbox.stub(Customer, 'find').returns({
 				sort: function() {
 					return this;
 				},
@@ -151,11 +151,11 @@ describe('Customer Service', function() {
 		});
 
 		it('error to execute query while finding all active customers', function(done) {
-			var queryError = 'query error'
-			var validCustomer = factories.validCustomer;
+			let queryError = 'query error'
+			let validCustomer = factories.validCustomer;
 
-			var loggerStub = sandbox.stub(logger, 'debug');
-			var findCustomerStub = sandbox.stub(Customer, 'find').returns({
+			let loggerStub = sandbox.stub(logger, 'debug');
+			let findCustomerStub = sandbox.stub(Customer, 'find').returns({
 				sort: function() {
 					return this;
 				},
@@ -181,11 +181,11 @@ describe('Customer Service', function() {
 
 	describe('find customer by id', function() {
 		it('find customer by id with success', function(done) {
-			var id = '1234567';
-			var validCustomer = factories.validCustomer;
+			let id = '1234567';
+			let validCustomer = factories.validCustomer;
 
-			var loggerStub = sandbox.stub(logger, 'debug');
-			var findByIdStub = sandbox.stub(Customer, 'findById').returns({
+			let loggerStub = sandbox.stub(logger, 'debug');
+			let findByIdStub = sandbox.stub(Customer, 'findById').returns({
 				exec: sandbox.stub().yields(null, validCustomer)
 			});
 
@@ -202,10 +202,10 @@ describe('Customer Service', function() {
 		});
 
 		it('customer not found while finding by id', function(done) {
-			var id = '1234567';
+			let id = '1234567';
 
-			var loggerStub = sandbox.stub(logger, 'debug');
-			var findByIdStub = sandbox.stub(Customer, 'findById').returns({
+			let loggerStub = sandbox.stub(logger, 'debug');
+			let findByIdStub = sandbox.stub(Customer, 'findById').returns({
 				exec: sandbox.stub().yields(null)
 			});
 
@@ -220,11 +220,11 @@ describe('Customer Service', function() {
 		});
 
 		it('error to execute query while finding by id', function(done) {
-			var id = '1234567';
-			var queryError = 'query error'
+			let id = '1234567';
+			let queryError = 'query error'
 
-			var loggerStub = sandbox.stub(logger, 'debug');
-			var findByIdStub = sandbox.stub(Customer, 'findById').returns({
+			let loggerStub = sandbox.stub(logger, 'debug');
+			let findByIdStub = sandbox.stub(Customer, 'findById').returns({
 				exec: sandbox.stub().yields(queryError)
 			});
 
@@ -242,11 +242,11 @@ describe('Customer Service', function() {
 
 	describe('update customer', function() {
 		it('update customer with success', function(done) {
-			var id = '1234567';
-			var validCustomer = factories.validCustomer;
+			let id = '1234567';
+			let validCustomer = factories.validCustomer;
 
-			var loggerStub = sandbox.stub(logger, 'debug');
-			var updateCustomerStub = sandbox.stub(Customer, 'findByIdAndUpdate').yields(null, validCustomer);
+			let loggerStub = sandbox.stub(logger, 'debug');
+			let updateCustomerStub = sandbox.stub(Customer, 'findByIdAndUpdate').yields(null, validCustomer);
 
 			CustomerService.update(id, validCustomer, function(err, updatedCustomer) {
 				assert(loggerStub.calledWith('Updating customer with id ' + id));
@@ -260,11 +260,11 @@ describe('Customer Service', function() {
 		});
 
 		it('error to execute query while updating customer', function(done) {
-			var id = '1234567';
-			var queryError = 'query error'
+			let id = '1234567';
+			let queryError = 'query error'
 
-			var loggerStub = sandbox.stub(logger, 'debug');
-			var updateCustomerStub = sandbox.stub(Customer, 'findByIdAndUpdate').yields(queryError);
+			let loggerStub = sandbox.stub(logger, 'debug');
+			let updateCustomerStub = sandbox.stub(Customer, 'findByIdAndUpdate').yields(queryError);
 
 			CustomerService.update(id, {}, function(err, updatedCustomer) {
 				assert(loggerStub.calledWith('Updating customer with id ' + id));

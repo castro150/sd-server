@@ -1,8 +1,8 @@
-var winston = require('winston');
-var properties = require('properties-reader')('./config/application.properties');
+const winston = require('winston');
+const properties = require('properties-reader')('./config/application.properties');
 winston.emitErrs = true;
 
-var logger = new winston.Logger({
+let logger = new winston.Logger({
 	transports: [
 		new winston.transports.Console({
 			level: properties.get('logger.level'),

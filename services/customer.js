@@ -1,16 +1,16 @@
 'use strict'
 
-var mongoose = require('mongoose');
+const mongoose = require('mongoose');
 
-var msg = require('properties-reader')('./config/messages.properties');
-var logger = require('config/logger.js');
-var Customer = mongoose.model('Customer');
-var CustomerStatus = require('models/CustomerStatus.js');
+const msg = require('properties-reader')('./config/messages.properties');
+const logger = require('config/logger.js');
+const Customer = mongoose.model('Customer');
+const CustomerStatus = require('models/CustomerStatus.js');
 
-var activeNumberExistsMsg = msg.get('customer.create.active.number.exists');
+let activeNumberExistsMsg = msg.get('customer.create.active.number.exists');
 
 exports.create = function(customerProperties, callback) {
-	var newCustomer = new Customer(customerProperties);
+	let newCustomer = new Customer(customerProperties);
 
 	validateExistisActiveNumber(newCustomer, function(err) {
 		if (err) {
@@ -29,7 +29,7 @@ exports.create = function(customerProperties, callback) {
 };
 
 exports.findAllActive = function(callback) {
-	var query = Customer.find({
+	let query = Customer.find({
 		status: CustomerStatus.ACTIVE
 	}).sort({
 		number: 1
@@ -54,7 +54,7 @@ exports.findAllActive = function(callback) {
 };
 
 exports.findById = function(id, callback) {
-	var query = Customer.findById(id);
+	let query = Customer.findById(id);
 
 	logger.debug('Finding customer with id ' + id);
 	query.exec(function(err, customer) {
@@ -84,8 +84,8 @@ exports.update = function(id, customer, callback) {
 	});
 }
 
-var validateExistisActiveNumber = function(newCustomer, callback) {
-	var query = Customer.find({
+let validateExistisActiveNumber = function(newCustomer, callback) {
+	let query = Customer.find({
 		number: newCustomer.number,
 		status: CustomerStatus.ACTIVE
 	});
@@ -102,8 +102,8 @@ var validateExistisActiveNumber = function(newCustomer, callback) {
 	});
 };
 
-var createError = function(name, msg, status) {
-	var err = new Error(msg);
+let createError = function(name, msg, status) {
+	let err = new Error(msg);
 	err.name = name;
 	err.status = status;
 	return err;
