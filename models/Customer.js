@@ -15,6 +15,8 @@ let CustomerSchema = new mongoose.Schema({
 	startServiceDate: Date,
 	startActivityDate: Date,
 	address: String,
+	addressNumber: String,
+	addressComp: String,
 	district: String,
 	city: String,
 	state: String,
