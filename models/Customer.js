@@ -44,7 +44,6 @@ let CustomerSchema = new mongoose.Schema({
 	cei: String,
 	gpsCode: String,
 	management: String,
-	cae: String,
 	nire: String,
 	cnae: String,
 	cnae2: [String],
