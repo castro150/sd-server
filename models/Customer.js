@@ -53,6 +53,7 @@ let CustomerSchema = new mongoose.Schema({
 	accessPassword: String,
 	municipalRegist: String,
 	stateRegist: String,
+	stateRegistFree: Boolean,
 	shareCapital: String,
 	crmCro: String,
 	registryOffice: String,
