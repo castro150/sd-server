@@ -25,7 +25,8 @@ let CustomerSchema = new mongoose.Schema({
 		name: String,
 		email: String,
 		tel: String,
-		cel: String
+		cel: String,
+		resp: String
 	}],
 	partners: [{
 		name: String,
