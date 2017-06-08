@@ -21,6 +21,8 @@ let CustomerSchema = new mongoose.Schema({
 	city: String,
 	state: String,
 	cep: String,
+	email: String,
+	tel: String,
 	contacts: [{
 		name: String,
 		email: String,
