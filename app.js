@@ -19,6 +19,7 @@ const cors = require('cors');
  */
 require('./models/User');
 require('./models/Customer');
+require('./models/ContactBox');
 require('./config/passport');
 const logger = require('./config/logger');
 const index = require('./routes/index');

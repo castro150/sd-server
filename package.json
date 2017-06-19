@@ -23,6 +23,8 @@
     "cors": "^2.8.3",
     "express": "^4.15.2",
     "express-jwt": "^5.1.0",
+    "google-contacts": "^0.1.5",
+    "googleapis": "^19.0.0",
     "istanbul": "^0.4.5",
     "mocha": "^3.4.1",
     "mongoose": "^4.8.6",
