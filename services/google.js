@@ -1,5 +1,7 @@
 'use strict'
 
+const XMLWriter = require('xml-writer');
+const http = require('http');
 const mongoose = require('mongoose');
 const google = require('googleapis');
 const OAuth2Client = google.auth.OAuth2;
@@ -74,6 +76,10 @@ let getContacts = function(contactBox, callback) {
 	}
 };
 
+let addContacts = function(contactBox, contacts, callback) {
+	let teste = createContactsXml(contacts);
+};
+
 let refreshToken = function(contactBox, callback) {
 	let oauth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URL);
 	oauth2Client.setCredentials(contactBox.tokens);
@@ -100,6 +106,49 @@ let refreshToken = function(contactBox, callback) {
 	});
 };
 
+let createContactsXml = function(contacts) {
+	let writer = new XMLWriter();
+	writer.startDocument('UTF-8', '1.0')
+		.startElement('feed')
+		.writeAttribute('xmlns', 'http://www.w3.org/2005/Atom')
+		.writeAttribute('xmlns:gContact', 'http://schemas.google.com/contact/2008')
+		.writeAttribute('xmlns:gd', 'http://schemas.google.com/g/2005')
+		.writeAttribute('xmlns:batch', 'http://schemas.google.com/gdata/batch');
+
+	contacts.forEach(function(contact) {
+		writer.startElement('entry')
+			.startElement('batch:id').writeCData('create').endElement()
+			.startElement('batch:operation').writeAttribute('type', 'insert').endElement()
+			.startElement('category')
+			.writeAttribute('scheme', 'http://schemas.google.com/g/2005#kind')
+			.writeAttribute('term', 'http://schemas.google.com/g/2008#contact')
+			.endElement()
+			.startElement('gd:name')
+			// TODO CData não está certo, e separar o nome
+			.startElement('gd:fullName').writeCData(contact.name).endElement()
+			.startElement('gd:givenName').writeCData('contact.firstName').endElement()
+			.startElement('gd:familyName').writeCData('contact.lastName').endElement()
+			.endElement()
+			.startElement('gd:email')
+			.writeAttribute('rel', 'http://schemas.google.com/g/2005#home')
+			.writeAttribute('address', contact.email)
+			.writeAttribute('primary', 'true')
+			.endElement()
+			.startElement('gd:phoneNumber')
+			.writeAttribute('rel', 'http://schemas.google.com/g/2005#other')
+			.writeAttribute('primary', 'true')
+			.writeCData(contact.phoneNumber)
+			.endElement()
+			.endElement();
+	});
+
+	writer.endElement()
+		.endDocument();
+
+	return writer.toString();
+};
+
 exports.generateAuthUrl = generateAuthUrl;
 exports.authenticate = authenticate;
 exports.getContacts = getContacts;
+exports.addContacts = addContacts;

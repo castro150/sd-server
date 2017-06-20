@@ -62,20 +62,24 @@ exports.watchMainEmail = function() {
 				var diff = contacts.filter(function(elem1) {
 					return savedContacts.filter(function(elem2) {
 						return elem2.id === elem1.id;
-					}).length === 0
+					}).length === 0;
 				});
 
-				Contact.collection.insert(diff, function(err, newContacts) {
-					if (err) {
-						logger.debug('Error to update contacts from database.');
-						logger.debug(err);
-						return;
-					}
+				if (diff.length > 0) {
+					Contact.collection.insert(diff, function(err, newContacts) {
+						if (err) {
+							logger.debug('Error to update contacts from database.');
+							logger.debug(err);
+							return;
+						}
 
-					logger.debug(newContacts.ops.length + ' new contacts added.');
-				});
+						logger.debug(newContacts.ops.length + ' new contacts added.');
+					});
 
-				// TODO atualizar todas as boxes
+					// TODO atualizar todas as boxes
+					// TODO melhoras logs do job
+					GoogleService.addContacts({}, contacts);
+				}
 			});
 		});
 	});
