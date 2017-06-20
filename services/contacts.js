@@ -1,20 +1,13 @@
 'use strict'
 
 const mongoose = require('mongoose');
-const GoogleContacts = require('google-contacts').GoogleContacts;
 const properties = require('properties-reader')('./config/application.properties');
-const OAuth2Client = require('googleapis').auth.OAuth2;
 
 const logger = require('config/logger.js');
 const ContactBox = mongoose.model('ContactBox');
+const GoogleService = require('services/google.js');
 
-const CLIENT_ID = properties.get('google.contacts.client.id');
-const CLIENT_SECRET = properties.get('google.contacts.client.secret');
-const REDIRECT_URL = properties.get('google.contacts.redirect.url');
-const mainEmail = properties.get('google.contacts.main.email');
-
-// TODO mover lógicas para o google service e testar ele
-let oauth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URL);
+const MAIN_EMAIL = properties.get('google.contacts.main.email');
 
 exports.registerContactBox = function(email, googleTokens, callback) {
 	let newBox = new ContactBox({
@@ -33,13 +26,13 @@ exports.registerContactBox = function(email, googleTokens, callback) {
 };
 
 exports.watchMainEmail = function() {
-	if (!mainEmail) {
+	if (!MAIN_EMAIL) {
 		logger.debug('Missing google.contacts.main.email property.');
 		return;
 	}
 
 	ContactBox.findOne({
-		email: mainEmail
+		email: MAIN_EMAIL
 	}).exec(function(err, mainBox) {
 		if (err) {
 			logger.debug('Error to get main email box.');
@@ -47,11 +40,11 @@ exports.watchMainEmail = function() {
 			return;
 		}
 		if (!mainBox) {
-			logger.debug(mainEmail + ' (main email) not registered.');
+			logger.debug(MAIN_EMAIL + ' (main email) not registered.');
 			return;
 		}
 
-		getContacts(mainBox, function(err, contacts) {
+		GoogleService.getContacts(mainBox, function(err, contacts) {
 			if (err) {
 				logger.debug('Error to get contacts from google.');
 				logger.debug(err);
@@ -59,59 +52,6 @@ exports.watchMainEmail = function() {
 			}
 
 			logger.debug(contacts);
-		});
-	});
-};
-
-let getContacts = function(contactBox, callback) {
-	var now = new Date();
-	if (now.getTime() >= contactBox.tokens.expiry_date) {
-		refreshToken(contactBox, function(err, refreshedContactBox) {
-			if (err) {
-				return callback(err);
-			}
-
-			return getContacts(refreshedContactBox, callback);
-		});
-	} else {
-		let contactsApi = new GoogleContacts({
-			consumerKey: CLIENT_ID,
-			consumerSecret: CLIENT_SECRET,
-			token: contactBox.tokens.access_token,
-			refreshToken: contactBox.tokens.refresh_token
-		});
-
-		contactsApi.getContacts(function(err, contacts) {
-			if (err) {
-				return callback(err);
-			}
-
-			return callback(null, contacts);
-		});
-	}
-};
-
-let refreshToken = function(contactBox, callback) {
-	oauth2Client.setCredentials(contactBox.tokens);
-	oauth2Client.refreshAccessToken(function(err, newTokens) {
-		if (err) {
-			return callback(err);
-		}
-
-		ContactBox.findOneAndUpdate({
-			email: contactBox.email
-		}, {
-			$set: {
-				tokens: newTokens
-			}
-		}, {
-			new: true
-		}, function(err, updatedContactBox) {
-			if (err) {
-				return callback(err);
-			}
-
-			return callback(null, updatedContactBox);
 		});
 	});
 };

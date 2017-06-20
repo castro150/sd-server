@@ -16,8 +16,8 @@ router.get('/google/login', function(req, res, next) {
 });
 
 router.get('/google/callback', function(req, res, next) {
-	GoogleService.authenticateNewContactBox(req.query.code, function(err, newEmail, tokens) {
-		ContactsService.registerContactBox(newEmail, tokens, function(err, newBox) {
+	GoogleService.authenticate(req.query.code, function(err, email, tokens) {
+		ContactsService.registerContactBox(email, tokens, function(err, newBox) {
 			if (err) {
 				return next(err);
 			}
