@@ -17,7 +17,7 @@ const SCOPES = [
 	'https://www.google.com/m8/feeds/contacts/default/full'
 ];
 
-exports.generateAuthUrl = function() {
+let generateAuthUrl = function() {
 	let oauth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URL);
 	return oauth2Client.generateAuthUrl({
 		access_type: 'offline',
@@ -25,7 +25,7 @@ exports.generateAuthUrl = function() {
 	});
 };
 
-exports.authenticate = function(code, callback) {
+let authenticate = function(code, callback) {
 	let oauth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URL);
 	oauth2Client.getToken(code, function(err, tokens) {
 		if (err) {
@@ -46,7 +46,7 @@ exports.authenticate = function(code, callback) {
 	});
 };
 
-exports.getContacts = function(contactBox, callback) {
+let getContacts = function(contactBox, callback) {
 	var now = new Date();
 	if (now.getTime() >= contactBox.tokens.expiry_date) {
 		refreshToken(contactBox, function(err, refreshedContactBox) {
@@ -54,7 +54,7 @@ exports.getContacts = function(contactBox, callback) {
 				return callback(err);
 			}
 
-			return exports.getContacts(refreshedContactBox, callback);
+			return getContacts(refreshedContactBox, callback);
 		});
 	} else {
 		let contactsApi = new GoogleContacts({
@@ -99,3 +99,7 @@ let refreshToken = function(contactBox, callback) {
 		});
 	});
 };
+
+exports.generateAuthUrl = generateAuthUrl;
+exports.authenticate = authenticate;
+exports.getContacts = getContacts;
