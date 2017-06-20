@@ -18,6 +18,7 @@ const cors = require('cors');
  * Internal dependencies
  */
 require('./models/User');
+require('./models/Contact');
 require('./models/Customer');
 require('./models/ContactBox');
 require('./config/passport');

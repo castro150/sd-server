@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const properties = require('properties-reader')('./config/application.properties');
 
 const logger = require('config/logger.js');
+const Contact = mongoose.model('Contact');
 const ContactBox = mongoose.model('ContactBox');
 const GoogleService = require('services/google.js');
 
@@ -51,7 +52,31 @@ exports.watchMainEmail = function() {
 				return;
 			}
 
-			logger.debug(contacts);
+			Contact.find().exec(function(err, savedContacts) {
+				if (err) {
+					logger.debug('Error to get contacts from database.');
+					logger.debug(err);
+					return;
+				}
+
+				var diff = contacts.filter(function(elem1) {
+					return savedContacts.filter(function(elem2) {
+						return elem2.id === elem1.id;
+					}).length === 0
+				});
+
+				Contact.collection.insert(diff, function(err, newContacts) {
+					if (err) {
+						logger.debug('Error to update contacts from database.');
+						logger.debug(err);
+						return;
+					}
+
+					logger.debug(newContacts.ops.length + ' new contacts added.');
+				});
+
+				// TODO atualizar todas as boxes
+			});
 		});
 	});
 };
