@@ -1,13 +1,14 @@
 'use strict'
 
 const XMLWriter = require('xml-writer');
-const http = require('http');
+const https = require('https');
 const mongoose = require('mongoose');
 const google = require('googleapis');
 const OAuth2Client = google.auth.OAuth2;
 const GoogleContacts = require('google-contacts').GoogleContacts;
 const properties = require('properties-reader')('./config/application.properties');
 
+const logger = require('config/logger.js');
 const ContactBox = mongoose.model('ContactBox');
 
 const CLIENT_ID = properties.get('google.contacts.client.id');
@@ -66,21 +67,72 @@ let getContacts = function(contactBox, callback) {
 			refreshToken: contactBox.tokens.refresh_token
 		});
 
+		logger.debug('Getting contacts from Google: ' + contactBox.email);
 		contactsApi.getContacts(function(err, contacts) {
 			if (err) {
 				return callback(err);
 			}
 
+			logger.debug(contacts.length + ' contacts found for ' + contactBox.email);
 			return callback(null, contacts);
 		});
 	}
 };
 
 let addContacts = function(contactBox, contacts, callback) {
-	let teste = createContactsXml(contacts);
+	var now = new Date();
+	if (now.getTime() >= contactBox.tokens.expiry_date) {
+		refreshToken(contactBox, function(err, refreshedContactBox) {
+			if (err) {
+				return callback(err);
+			}
+
+			return addContacts(refreshedContactBox, contacts, callback);
+		});
+	} else {
+		let options = {
+			host: 'www.google.com',
+			path: '/m8/feeds/contacts/default/full/batch',
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/atom+xml',
+				'GData-Version': '3.0',
+				'Authorization': 'Bearer ' + contactBox.tokens.access_token
+			}
+		};
+
+		var req = https.request(options, function(response) {
+			var returnedData = '';
+			response.on('data', function(chunk) {
+				returnedData += chunk;
+			});
+
+			response.on('end', function() {
+				if (response.statusCode === 200) {
+					logger.debug(contacts.length + ' new contacts added to ' + contactBox.email);
+					callback(null, returnedData);
+				} else {
+					callback('Error status: ' + response.statusCode);
+				}
+			});
+
+			response.on('error', function(err) {
+				callback(err);
+			});
+		});
+
+		req.on('error', function(err) {
+			callback(err);
+		});
+
+		logger.debug('Sending contacts to Google: ' + contactBox.email);
+		req.write(createContactsXml(contacts));
+		req.end();
+	}
 };
 
 let refreshToken = function(contactBox, callback) {
+	logger.debug('Refreshing token for ' + contactBox.email);
 	let oauth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URL);
 	oauth2Client.setCredentials(contactBox.tokens);
 	oauth2Client.refreshAccessToken(function(err, newTokens) {
@@ -88,6 +140,7 @@ let refreshToken = function(contactBox, callback) {
 			return callback(err);
 		}
 
+		logger.debug('Saving new token for ' + contactBox.email);
 		ContactBox.findOneAndUpdate({
 			email: contactBox.email
 		}, {
@@ -101,6 +154,7 @@ let refreshToken = function(contactBox, callback) {
 				return callback(err);
 			}
 
+			logger.debug('Success to save new token for ' + contactBox.email);
 			return callback(null, updatedContactBox);
 		});
 	});
@@ -108,7 +162,7 @@ let refreshToken = function(contactBox, callback) {
 
 let createContactsXml = function(contacts) {
 	let writer = new XMLWriter();
-	writer.startDocument('UTF-8', '1.0')
+	writer.startDocument('1.0', 'UTF-8')
 		.startElement('feed')
 		.writeAttribute('xmlns', 'http://www.w3.org/2005/Atom')
 		.writeAttribute('xmlns:gContact', 'http://schemas.google.com/contact/2008')
@@ -116,30 +170,34 @@ let createContactsXml = function(contacts) {
 		.writeAttribute('xmlns:batch', 'http://schemas.google.com/gdata/batch');
 
 	contacts.forEach(function(contact) {
+		var names = contact.name.split(' ');
+		var familyName = names.slice(1, names.length).join(' ');
+
 		writer.startElement('entry')
-			.startElement('batch:id').writeCData('create').endElement()
+			.startElement('batch:id').text('create').endElement()
 			.startElement('batch:operation').writeAttribute('type', 'insert').endElement()
 			.startElement('category')
 			.writeAttribute('scheme', 'http://schemas.google.com/g/2005#kind')
 			.writeAttribute('term', 'http://schemas.google.com/g/2008#contact')
 			.endElement()
 			.startElement('gd:name')
-			// TODO CData não está certo, e separar o nome
-			.startElement('gd:fullName').writeCData(contact.name).endElement()
-			.startElement('gd:givenName').writeCData('contact.firstName').endElement()
-			.startElement('gd:familyName').writeCData('contact.lastName').endElement()
+			.startElement('gd:fullName').text(contact.name).endElement()
+			.startElement('gd:givenName').text(names[0]).endElement()
+			.startElement('gd:familyName').text(familyName).endElement()
 			.endElement()
 			.startElement('gd:email')
 			.writeAttribute('rel', 'http://schemas.google.com/g/2005#home')
 			.writeAttribute('address', contact.email)
 			.writeAttribute('primary', 'true')
-			.endElement()
-			.startElement('gd:phoneNumber')
-			.writeAttribute('rel', 'http://schemas.google.com/g/2005#other')
-			.writeAttribute('primary', 'true')
-			.writeCData(contact.phoneNumber)
-			.endElement()
 			.endElement();
+		if (contact.phoneNumber !== undefined && contact.phoneNumber !== null && contact.phoneNumber !== '') {
+			writer.startElement('gd:phoneNumber')
+				.writeAttribute('rel', 'http://schemas.google.com/g/2005#other')
+				.writeAttribute('primary', 'true')
+				.text(contact.phoneNumber)
+				.endElement();
+		}
+		writer.endElement();
 	});
 
 	writer.endElement()
