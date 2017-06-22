@@ -32,4 +32,14 @@ router.get('/entrypoint', function(req, res, next) {
 	res.json('Job fired.');
 });
 
+router.get('/entrypoint/force', function(req, res, next) {
+	ContactsService.updateContactsByMainEmail();
+	res.json('Updating contacts.');
+});
+
+router.get('/entrypoint/stop', function(req, res, next) {
+	ContactsService.stopMainEmailWatcher();
+	res.json('Job stoped.');
+});
+
 module.exports = router;

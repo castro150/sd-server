@@ -11,6 +11,8 @@ const GoogleService = require('services/google.js');
 const MAIN_EMAIL = properties.get('google.contacts.main.email');
 const WAIT_TIME = parseInt(properties.get('google.contacts.watch.wait.time'));
 
+let mainEmailWatcher = null;
+
 let registerContactBox = function(email, googleTokens, callback) {
 	let newBox = new ContactBox({
 		email: email,
@@ -28,9 +30,23 @@ let registerContactBox = function(email, googleTokens, callback) {
 };
 
 let watchMainEmail = function() {
-	logger.debug('Watching main email every ' + WAIT_TIME + 'ms.');
-	setInterval(updateContactsByMainEmail, WAIT_TIME);
+	if (!mainEmailWatcher) {
+		logger.debug('Watching main email every ' + WAIT_TIME + 'ms.');
+		mainEmailWatcher = setInterval(updateContactsByMainEmail, WAIT_TIME);
+	} else {
+		logger.debug('Main email already watched.');
+	}
 };
+
+let stopMainEmailWatcher = function() {
+	if (mainEmailWatcher) {
+		clearTimeout(mainEmailWatcher);
+		mainEmailWatcher = null;
+		logger.debug('Main email watcher stoped.');
+	} else {
+		logger.debug('No job running.');
+	}
+}
 
 let updateContactsByMainEmail = function() {
 	if (!MAIN_EMAIL) {
@@ -113,3 +129,5 @@ let updateContactsByMainEmail = function() {
 
 exports.registerContactBox = registerContactBox;
 exports.watchMainEmail = watchMainEmail;
+exports.updateContactsByMainEmail = updateContactsByMainEmail;
+exports.stopMainEmailWatcher = stopMainEmailWatcher;
