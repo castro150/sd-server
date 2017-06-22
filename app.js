@@ -27,6 +27,8 @@ const index = require('./routes/index');
 
 let app = express();
 
+require('events').EventEmitter.defaultMaxListeners = 15;
+
 app.use(cors());
 app.use(require('morgan')('short', {
 	'stream': logger.stream

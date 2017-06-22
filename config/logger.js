@@ -15,6 +15,22 @@ let logger = new winston.Logger({
 	exitOnError: false
 });
 
+logger.file = function(fileName) {
+	return new winston.Logger({
+		transports: [
+			new winston.transports.File({
+				level: properties.get('logger.level'),
+				handleExceptions: true,
+				json: false,
+				timestamp: () => (new Date()).toISOString(),
+				colorize: true,
+				filename: 'log/' + fileName
+			})
+		],
+		exitOnError: false
+	});
+};
+
 module.exports = logger;
 module.exports.stream = {
 	write: function(message, encoding) {

@@ -50,7 +50,7 @@ let authenticate = function(code, callback) {
 };
 
 let getContacts = function(contactBox, callback) {
-	var now = new Date();
+	let now = new Date();
 	if (now.getTime() >= contactBox.tokens.expiry_date) {
 		refreshToken(contactBox, function(err, refreshedContactBox) {
 			if (err) {
@@ -80,7 +80,7 @@ let getContacts = function(contactBox, callback) {
 };
 
 let addContacts = function(contactBox, contacts, callback) {
-	var now = new Date();
+	let now = new Date();
 	if (now.getTime() >= contactBox.tokens.expiry_date) {
 		refreshToken(contactBox, function(err, refreshedContactBox) {
 			if (err) {
@@ -101,33 +101,40 @@ let addContacts = function(contactBox, contacts, callback) {
 			}
 		};
 
-		var req = https.request(options, function(response) {
-			var returnedData = '';
-			response.on('data', function(chunk) {
-				returnedData += chunk;
+		let batchIndex = 0;
+		logger.debug('Sending contacts to Google: ' + contactBox.email);
+		for (let i = 0, j = contacts.length; i < j; i += 100) {
+			let subcontacts = contacts.slice(i, i + 100);
+
+			let request = https.request(options, function(response) {
+				let returnedData = '';
+				response.on('data', function(chunk) {
+					returnedData += chunk;
+				});
+
+				response.on('end', function() {
+					batchIndex++;
+					if (response.statusCode === 200) {
+						logger.debug('New contacts added to ' + contactBox.email + ', batch ' + batchIndex);
+						logger.file('log-' + contactBox.email + batchIndex + '.log').debug(returnedData);
+						callback(null, returnedData);
+					} else {
+						callback('Error status: ' + response.statusCode);
+					}
+				});
+
+				response.on('error', function(err) {
+					callback(err);
+				});
 			});
 
-			response.on('end', function() {
-				if (response.statusCode === 200) {
-					logger.debug(contacts.length + ' new contacts added to ' + contactBox.email);
-					callback(null, returnedData);
-				} else {
-					callback('Error status: ' + response.statusCode);
-				}
-			});
-
-			response.on('error', function(err) {
+			request.on('error', function(err) {
 				callback(err);
 			});
-		});
 
-		req.on('error', function(err) {
-			callback(err);
-		});
-
-		logger.debug('Sending contacts to Google: ' + contactBox.email);
-		req.write(createContactsXml(contacts));
-		req.end();
+			request.write(createContactsXml(subcontacts));
+			request.end();
+		}
 	}
 };
 
@@ -170,8 +177,8 @@ let createContactsXml = function(contacts) {
 		.writeAttribute('xmlns:batch', 'http://schemas.google.com/gdata/batch');
 
 	contacts.forEach(function(contact) {
-		var names = contact.name.split(' ');
-		var familyName = names.slice(1, names.length).join(' ');
+		let names = contact.name.split(' ');
+		let familyName = names.slice(1, names.length).join(' ');
 
 		writer.startElement('entry')
 			.startElement('batch:id').text('create').endElement()
@@ -184,12 +191,14 @@ let createContactsXml = function(contacts) {
 			.startElement('gd:fullName').text(contact.name).endElement()
 			.startElement('gd:givenName').text(names[0]).endElement()
 			.startElement('gd:familyName').text(familyName).endElement()
-			.endElement()
-			.startElement('gd:email')
-			.writeAttribute('rel', 'http://schemas.google.com/g/2005#home')
-			.writeAttribute('address', contact.email)
-			.writeAttribute('primary', 'true')
 			.endElement();
+		if (contact.email !== undefined && contact.email !== null && contact.email !== '') {
+			writer.startElement('gd:email')
+				.writeAttribute('rel', 'http://schemas.google.com/g/2005#home')
+				.writeAttribute('address', contact.email)
+				.writeAttribute('primary', 'true')
+				.endElement();
+		}
 		if (contact.phoneNumber !== undefined && contact.phoneNumber !== null && contact.phoneNumber !== '') {
 			writer.startElement('gd:phoneNumber')
 				.writeAttribute('rel', 'http://schemas.google.com/g/2005#other')
