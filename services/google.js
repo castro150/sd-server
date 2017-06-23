@@ -132,7 +132,7 @@ let addContacts = function(contactBox, contacts, callback) {
 				callback(err);
 			});
 
-			request.write(createContactsXml(subcontacts));
+			request.write(createContactsXml(contactBox.email, subcontacts));
 			request.end();
 		}
 	}
@@ -167,7 +167,7 @@ let refreshToken = function(contactBox, callback) {
 	});
 };
 
-let createContactsXml = function(contacts) {
+let createContactsXml = function(email, contacts) {
 	let writer = new XMLWriter();
 	writer.startDocument('1.0', 'UTF-8')
 		.startElement('feed')
@@ -206,6 +206,10 @@ let createContactsXml = function(contacts) {
 				.text(contact.phoneNumber)
 				.endElement();
 		}
+		writer.startElement('gContact:groupMembershipInfo')
+			.writeAttribute('deleted', 'false')
+			.writeAttribute('href', 'http://www.google.com/m8/feeds/groups/' + email + '/base/6')
+			.endElement();
 		writer.endElement();
 	});
 
