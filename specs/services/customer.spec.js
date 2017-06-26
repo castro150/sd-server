@@ -24,8 +24,8 @@ describe('Customer Service', function() {
 			let customerProperties = factories.validCustomer;
 
 			let loggerStub = sandbox.stub(logger, 'debug');
-			let findCustomerStub = sandbox.stub(Customer, 'find').returns({
-				exec: sandbox.stub().yields(null, [])
+			let findCustomerStub = sandbox.stub(Customer, 'findOne').returns({
+				exec: sandbox.stub().yields(null, null)
 			});
 			sandbox.stub(Customer.prototype, 'save').yields(null);
 
@@ -48,8 +48,11 @@ describe('Customer Service', function() {
 			let customerProperties = factories.validCustomer;
 
 			let loggerStub = sandbox.stub(logger, 'debug');
-			let findCustomerStub = sandbox.stub(Customer, 'find').returns({
-				exec: sandbox.stub().yields(null, [{}])
+			let findCustomerStub = sandbox.stub(Customer, 'findOne').returns({
+				exec: sandbox.stub().yields(null, {
+					_id: '1',
+					number: customerProperties.number
+				})
 			});
 
 			CustomerService.create(customerProperties, function(err, savedCustomer) {
@@ -63,7 +66,7 @@ describe('Customer Service', function() {
 				assert.isNotNull(err);
 				assert.equal(err.name, 'customer.create.active.number.exists');
 				assert.equal(err.status, 400);
-				assert.equal(err.message, 'Create Customer: number ' + customerProperties.number + ' in use for active customer');
+				assert.equal(err.message, 'Customer number ' + customerProperties.number + ' in use for active customer');
 
 				done();
 			});
@@ -74,7 +77,7 @@ describe('Customer Service', function() {
 			let customerProperties = factories.validCustomer;
 
 			let loggerStub = sandbox.stub(logger, 'debug');
-			let findCustomerStub = sandbox.stub(Customer, 'find').returns({
+			let findCustomerStub = sandbox.stub(Customer, 'findOne').returns({
 				exec: sandbox.stub().yields(queryError)
 			});
 
@@ -98,8 +101,8 @@ describe('Customer Service', function() {
 			let customerProperties = factories.validCustomer;
 
 			let loggerStub = sandbox.stub(logger, 'debug');
-			let findCustomerStub = sandbox.stub(Customer, 'find').returns({
-				exec: sandbox.stub().yields(null, [])
+			let findCustomerStub = sandbox.stub(Customer, 'findOne').returns({
+				exec: sandbox.stub().yields(null, null)
 			});
 			sandbox.stub(Customer.prototype, 'save').yields(saveError);
 
@@ -246,9 +249,16 @@ describe('Customer Service', function() {
 			let validCustomer = factories.validCustomer;
 
 			let loggerStub = sandbox.stub(logger, 'debug');
+			let findCustomerStub = sandbox.stub(Customer, 'findOne').returns({
+				exec: sandbox.stub().yields(null, null)
+			});
 			let updateCustomerStub = sandbox.stub(Customer, 'findByIdAndUpdate').yields(null, validCustomer);
 
 			CustomerService.update(id, validCustomer, function(err, updatedCustomer) {
+				assert(findCustomerStub.calledWith({
+					number: validCustomer.number,
+					status: CustomerStatus.ACTIVE
+				}));
 				assert(loggerStub.calledWith('Updating customer with id ' + id));
 
 				assert.isNotNull(updatedCustomer);
@@ -264,12 +274,40 @@ describe('Customer Service', function() {
 			let queryError = 'query error'
 
 			let loggerStub = sandbox.stub(logger, 'debug');
+			let findCustomerStub = sandbox.stub(Customer, 'findOne').returns({
+				exec: sandbox.stub().yields(null, null)
+			});
 			let updateCustomerStub = sandbox.stub(Customer, 'findByIdAndUpdate').yields(queryError);
 
 			CustomerService.update(id, {}, function(err, updatedCustomer) {
 				assert(loggerStub.calledWith('Updating customer with id ' + id));
 
 				assert.isUndefined(updatedCustomer);
+				assert.equal(err, queryError);
+
+				done();
+			});
+		});
+
+		it('error to execute validation query while updating customer', function(done) {
+			let id = '1234567';
+			let queryError = 'query error'
+			let validCustomer = factories.validCustomer;
+
+			let loggerStub = sandbox.stub(logger, 'debug');
+			let findCustomerStub = sandbox.stub(Customer, 'findOne').returns({
+				exec: sandbox.stub().yields(queryError)
+			});
+
+			CustomerService.update(id, validCustomer, function(err, updatedCustomer) {
+				assert(findCustomerStub.calledWith({
+					number: validCustomer.number,
+					status: CustomerStatus.ACTIVE
+				}));
+				assert.isFalse(loggerStub.called);
+
+				assert.isUndefined(updatedCustomer);
+				assert.isNotNull(err);
 				assert.equal(err, queryError);
 
 				done();

@@ -69,24 +69,30 @@ exports.findById = function(id, callback) {
 };
 
 exports.update = function(id, customer, callback) {
-	logger.debug('Updating customer with id ' + id);
-	Customer.findByIdAndUpdate(id, {
-		$set: customer
-	}, {
-		new: true
-	}, function(err, customer) {
+	validateExistisActiveNumber(customer, function(err) {
 		if (err) {
 			return callback(err);
 		}
 
-		logger.debug('Customer with id ' + id + ' updated');
-		callback(null, customer);
-	});
-}
+		logger.debug('Updating customer with id ' + id);
+		Customer.findByIdAndUpdate(id, {
+			$set: customer
+		}, {
+			new: true
+		}, function(err, customer) {
+			if (err) {
+				return callback(err);
+			}
 
-let validateExistisActiveNumber = function(newCustomer, callback) {
-	let query = Customer.find({
-		number: newCustomer.number,
+			logger.debug('Customer with id ' + id + ' updated');
+			callback(null, customer);
+		});
+	});
+};
+
+let validateExistisActiveNumber = function(checkCustomer, callback) {
+	let query = Customer.findOne({
+		number: checkCustomer.number,
 		status: CustomerStatus.ACTIVE
 	});
 
@@ -94,8 +100,8 @@ let validateExistisActiveNumber = function(newCustomer, callback) {
 		if (err) {
 			return callback(err);
 		}
-		if (customer.length !== 0) {
-			return callback(createError(activeNumberExistsMsg, 'Create Customer: number ' + newCustomer.number + ' in use for active customer', 400));
+		if (customer !== null && checkCustomer._id.toString() !== customer._id.toString()) {
+			return callback(createError(activeNumberExistsMsg, 'Customer number ' + customer.number + ' in use for active customer', 400));
 		}
 
 		return callback(null);
