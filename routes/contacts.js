@@ -10,9 +10,10 @@ const GoogleService = require('services/google.js');
 router.get('/google/login', function(req, res, next) {
 	let url = GoogleService.generateAuthUrl();
 
-	res.json({
-		consent_url: url
+	res.writeHead(302, {
+		'Location': url
 	});
+	res.end();
 });
 
 router.get('/google/callback', function(req, res, next) {
