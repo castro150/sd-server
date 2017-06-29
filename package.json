@@ -5,10 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "node ./bin/www",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "mocha specs/** --require specs/helpers/bootstrap.js --reporter spec",
     "debug": "node-debug ./bin/www --debug-brk",
     "debug-log": "DEBUG=sd-server:server,express* node-debug ./bin/www --debug-brk",
-    "unit-tests": "mocha specs/** --require specs/helpers/bootstrap.js --reporter spec",
     "debug-unit-tests": "mocha specs/** --require specs/helpers/bootstrap.js --reporter spec --debug-brk",
     "test-coverage": "istanbul cover _mocha specs/** --require specs/helpers/bootstrap.js --reporter spec",
     "pm2": "pm2 start ./bin/www"
