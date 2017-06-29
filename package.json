@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node ./bin/www",
-    "test": "mocha specs/** --require specs/helpers/bootstrap.js --reporter spec",
+    "test": "mocha ./specs/**/**.spec.js --require ./specs/helpers/bootstrap.js --reporter spec",
     "debug": "node-debug ./bin/www --debug-brk",
     "debug-log": "DEBUG=sd-server:server,express* node-debug ./bin/www --debug-brk",
     "debug-unit-tests": "mocha specs/** --require specs/helpers/bootstrap.js --reporter spec --debug-brk",
