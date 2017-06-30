@@ -38,5 +38,8 @@
     "mocha": "^3.4.2",
     "node-mocks-http": "^1.6.2",
     "sinon": "^2.3.2"
+  },
+  "engines": {
+    "node": "7.9.0"
   }
 }
