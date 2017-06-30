@@ -67,6 +67,5 @@ app.use(function(err, req, res, next) {
 
 module.exports = app;
 
-let dbHost = properties.get('mongodb.db.host');
-let dbName = properties.get('mongodb.db.name');
-mongoose.connect('mongodb://' + dbHost + '/' + dbName);
+let dbConnection = process.env.MONGODB_URI || properties.get('mongodb.db.uri');
+mongoose.connect(dbConnection);
