@@ -91,37 +91,41 @@ let updateContactsByMainEmail = function() {
 					}).length === 0;
 				});
 
-				if (diff.length > 0) {
-					logger.debug('There are new contacts in the main email.');
-					logger.debug('Adding new contacts in database.');
-					Contact.collection.insert(diff, function(err, newContacts) {
-						if (err) {
-							logger.debug('Error to update contacts from database.');
-							logger.debug(err);
-							return;
-						}
+				var teste = diff;
+				// if (diff.length > 0) {
+				// 	logger.debug('There are new contacts in the main email.');
+				// 	logger.debug('Adding new contacts in database.');
+				// 	Contact.collection.insert(diff, function(err, newContacts) {
+				// 		if (err) {
+				// 			logger.debug('Error to update contacts from database.');
+				// 			logger.debug(err);
+				// 			return;
+				// 		}
+				//
+				// 		logger.debug(newContacts.ops.length + ' new contacts added to database.');
+				// 	});
+				//
+				// 	logger.debug('Adding new contacts in each registered contact box.');
+				// 	ContactBox.find().exec(function(err, contactBoxes) {
+				// 		contactBoxes.forEach(function(contactBox) {
+				// 			if (contactBox.email !== MAIN_EMAIL) {
+				// 				logger.debug('Adding new contacts in ' + contactBox.email);
+				// 				GoogleService.addContacts(contactBox, diff, function(err) {
+				// 					if (err) {
+				// 						logger.debug('Error to add contacts in ' + contactBox.email);
+				// 						logger.debug(err);
+				// 						return;
+				// 					}
+				// 				});
+				// 			}
+				// 		});
+				// 	});
+				// } else {
+				// 	logger.debug('No new contacts in the main email.');
+				// }
 
-						logger.debug(newContacts.ops.length + ' new contacts added to database.');
-					});
 
-					logger.debug('Adding new contacts in each registered contact box.');
-					ContactBox.find().exec(function(err, contactBoxes) {
-						contactBoxes.forEach(function(contactBox) {
-							if (contactBox.email !== MAIN_EMAIL) {
-								logger.debug('Adding new contacts in ' + contactBox.email);
-								GoogleService.addContacts(contactBox, diff, function(err) {
-									if (err) {
-										logger.debug('Error to add contacts in ' + contactBox.email);
-										logger.debug(err);
-										return;
-									}
-								});
-							}
-						});
-					});
-				} else {
-					logger.debug('No new contacts in the main email.');
-				}
+				// TODO atualizar ultima data de checagem no contactBox
 			});
 		});
 	});

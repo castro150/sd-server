@@ -5,7 +5,8 @@ const https = require('https');
 const mongoose = require('mongoose');
 const google = require('googleapis');
 const OAuth2Client = google.auth.OAuth2;
-const GoogleContacts = require('google-contacts').GoogleContacts;
+const xml2js = require('xml2js');
+const xmlParser = new xml2js.Parser();
 const properties = require('properties-reader')('./config/application.properties');
 
 const logger = require('config/logger.js');
@@ -60,22 +61,46 @@ let getContacts = function(contactBox, callback) {
 			return getContacts(refreshedContactBox, callback);
 		});
 	} else {
-		let contactsApi = new GoogleContacts({
-			consumerKey: CLIENT_ID,
-			consumerSecret: CLIENT_SECRET,
-			token: contactBox.tokens.access_token,
-			refreshToken: contactBox.tokens.refresh_token
-		});
+		let options = {
+			host: 'www.google.com',
+			path: '/m8/feeds/contacts/default/full?max-results=10000',
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/atom+xml',
+				'GData-Version': '3.0',
+				'Authorization': 'Bearer ' + contactBox.tokens.access_token
+			}
+		};
 
 		logger.debug('Getting contacts from Google: ' + contactBox.email);
-		contactsApi.getContacts(function(err, contacts) {
-			if (err) {
-				return callback(err);
-			}
+		let request = https.request(options, function(response) {
+			let returnedData = '';
+			response.on('data', function(chunk) {
+				returnedData += chunk;
+			});
 
-			logger.debug(contacts.length + ' contacts found for ' + contactBox.email);
-			return callback(null, contacts);
+			response.on('end', function() {
+				if (response.statusCode === 200) {
+					xmlParser.parseString(returnedData, function(err, googleContacts) {
+						let contacts = googleContactsToEntity(googleContacts);
+						logger.debug(contacts.length + ' contacts found for ' + contactBox.email);
+						callback(null, contacts);
+					});
+				} else {
+					callback('Error status: ' + response.statusCode);
+				}
+			});
+
+			response.on('error', function(err) {
+				callback(err);
+			});
 		});
+
+		request.on('error', function(err) {
+			callback(err);
+		});
+
+		request.end();
 	}
 };
 
@@ -218,6 +243,27 @@ let createContactsXml = function(email, contacts) {
 
 	return writer.toString();
 };
+
+let googleContactsToEntity = function(googleContacts) {
+	let contacts = [];
+	googleContacts.feed.entry.forEach(function(googleEntry) {
+		let contact = {};
+		let idParts = googleEntry.id[0].split('/');
+		contact.id = idParts[idParts.length - 1];
+		if (googleEntry['gd:email']) {
+			contact.email = googleEntry['gd:email'][0].$.address;
+		}
+		if (googleEntry['gd:name']) {
+			contact.name = googleEntry['gd:name'][0]['gd:fullName'][0];
+		}
+		if (googleEntry['gd:phoneNumber']) {
+			contact.phoneNumber = googleEntry['gd:phoneNumber'][0].$.uri;
+		}
+		contacts.push(contact);
+	});
+
+	return contacts;
+}
 
 exports.generateAuthUrl = generateAuthUrl;
 exports.authenticate = authenticate;
