@@ -63,7 +63,7 @@ let getContacts = function(contactBox, callback) {
 	} else {
 		let options = {
 			host: 'www.google.com',
-			path: '/m8/feeds/contacts/default/full?max-results=10000',
+			path: '/m8/feeds/contacts/default/full?max-results=10000&showdeleted=true' + '&updated-min=2017-07-10T00:00:00',
 			method: 'GET',
 			headers: {
 				'Content-Type': 'application/atom+xml',
@@ -82,9 +82,9 @@ let getContacts = function(contactBox, callback) {
 			response.on('end', function() {
 				if (response.statusCode === 200) {
 					xmlParser.parseString(returnedData, function(err, googleContacts) {
-						let contacts = googleContactsToEntity(googleContacts);
-						logger.debug(contacts.length + ' contacts found for ' + contactBox.email);
-						callback(null, contacts);
+						let allContacts = googleContactsToEntity(googleContacts);
+						logger.debug(allContacts.contacts.length + ' contacts found for ' + contactBox.email);
+						callback(null, allContacts);
 					});
 				} else {
 					callback('Error status: ' + response.statusCode);
@@ -127,39 +127,58 @@ let addContacts = function(contactBox, contacts, callback) {
 		};
 
 		let batchIndex = 0;
+		let promises = [];
 		logger.debug('Sending contacts to Google: ' + contactBox.email);
-		for (let i = 0, j = contacts.length; i < j; i += 100) {
-			let subcontacts = contacts.slice(i, i + 100);
+		// for (let i = 0, j = contacts.length; i < j; i += 100) {
+		for (let i = 0, j = contacts.length; i < j; i += 2) {
+			promises.push(new Promise(function(resolve, reject) {
+				// let subcontacts = contacts.slice(i, i + 100);
+				let subcontacts = contacts.slice(i, i + 2);
 
-			let request = https.request(options, function(response) {
-				let returnedData = '';
-				response.on('data', function(chunk) {
-					returnedData += chunk;
+				let request = https.request(options, function(response) {
+					let returnedData = '';
+					response.on('data', function(chunk) {
+						returnedData += chunk;
+					});
+
+					response.on('end', function() {
+						batchIndex++;
+						if (response.statusCode === 200) {
+							xmlParser.parseString(returnedData, function(err, batchResponse) {
+								logger.debug('New contacts added to ' + contactBox.email + ', batch ' + batchIndex);
+								logger.file('log-' + contactBox.email + batchIndex + '.log').debug(returnedData);
+								let contacts = googleContactsToEntity(batchResponse).contacts;
+								resolve(contacts);
+							});
+						} else {
+							reject('Google request error in some batch. Error status: ' + response.statusCode);
+						}
+					});
+
+					response.on('error', function(err) {
+						logger.debug('Google request error in some batch.');
+						reject(err);
+					});
 				});
 
-				response.on('end', function() {
-					batchIndex++;
-					if (response.statusCode === 200) {
-						logger.debug('New contacts added to ' + contactBox.email + ', batch ' + batchIndex);
-						logger.file('log-' + contactBox.email + batchIndex + '.log').debug(returnedData);
-						callback(null, returnedData);
-					} else {
-						callback('Error status: ' + response.statusCode);
-					}
+				request.on('error', function(err) {
+					logger.debug('Google request error in some batch.');
+					reject(err);
 				});
 
-				response.on('error', function(err) {
-					callback(err);
-				});
-			});
-
-			request.on('error', function(err) {
+				request.write(createContactsXml(contactBox.email, subcontacts));
+				request.end();
+			}).catch(function(err) {
 				callback(err);
-			});
-
-			request.write(createContactsXml(contactBox.email, subcontacts));
-			request.end();
+			}));
 		}
+
+		Promise.all(promises).then(function(createdContacts) {
+			callback(null, createdContacts);
+		}).catch(function(err) {
+			logger.debug('Error to execute all promises to add google contacts requests.');
+			logger.debug(err);
+		});
 	}
 };
 
@@ -246,23 +265,30 @@ let createContactsXml = function(email, contacts) {
 
 let googleContactsToEntity = function(googleContacts) {
 	let contacts = [];
+	let deleted = [];
 	googleContacts.feed.entry.forEach(function(googleEntry) {
 		let contact = {};
-		let idParts = googleEntry.id[0].split('/');
-		contact.id = idParts[idParts.length - 1];
-		if (googleEntry['gd:email']) {
-			contact.email = googleEntry['gd:email'][0].$.address;
+		contact.id = googleEntry.id[0];
+		if (googleEntry['gd:deleted']) {
+			deleted.push(contact);
+		} else {
+			if (googleEntry['gd:email']) {
+				contact.email = googleEntry['gd:email'][0].$.address;
+			}
+			if (googleEntry['gd:name']) {
+				contact.name = googleEntry['gd:name'][0]['gd:fullName'][0];
+			}
+			if (googleEntry['gd:phoneNumber']) {
+				contact.phoneNumber = googleEntry['gd:phoneNumber'][0].$.uri;
+			}
+			contacts.push(contact);
 		}
-		if (googleEntry['gd:name']) {
-			contact.name = googleEntry['gd:name'][0]['gd:fullName'][0];
-		}
-		if (googleEntry['gd:phoneNumber']) {
-			contact.phoneNumber = googleEntry['gd:phoneNumber'][0].$.uri;
-		}
-		contacts.push(contact);
 	});
 
-	return contacts;
+	return {
+		contacts: contacts,
+		deleted: deleted
+	};
 }
 
 exports.generateAuthUrl = generateAuthUrl;

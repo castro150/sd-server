@@ -69,7 +69,7 @@ let updateContactsByMainEmail = function() {
 		}
 
 		logger.debug('Getting main email contacts.');
-		GoogleService.getContacts(mainBox, function(err, contacts) {
+		GoogleService.getContacts(mainBox, function(err, allContacts) {
 			if (err) {
 				logger.debug('Error to get contacts from google.');
 				logger.debug(err);
@@ -85,44 +85,66 @@ let updateContactsByMainEmail = function() {
 				}
 
 				logger.debug(savedContacts.length + ' contacts found in database.');
-				var diff = contacts.filter(function(elem1) {
+				let toUpdate = [];
+				let toCreate = allContacts.contacts.filter(function(elem1) {
 					return savedContacts.filter(function(elem2) {
+						if (elem2.id === elem1.id) {
+							elem1.otherIds = elem2.otherIds;
+							toUpdate.push(elem1);
+						}
 						return elem2.id === elem1.id;
 					}).length === 0;
 				});
 
-				var teste = diff;
-				// if (diff.length > 0) {
-				// 	logger.debug('There are new contacts in the main email.');
-				// 	logger.debug('Adding new contacts in database.');
-				// 	Contact.collection.insert(diff, function(err, newContacts) {
-				// 		if (err) {
-				// 			logger.debug('Error to update contacts from database.');
-				// 			logger.debug(err);
-				// 			return;
-				// 		}
-				//
-				// 		logger.debug(newContacts.ops.length + ' new contacts added to database.');
-				// 	});
-				//
-				// 	logger.debug('Adding new contacts in each registered contact box.');
-				// 	ContactBox.find().exec(function(err, contactBoxes) {
-				// 		contactBoxes.forEach(function(contactBox) {
-				// 			if (contactBox.email !== MAIN_EMAIL) {
-				// 				logger.debug('Adding new contacts in ' + contactBox.email);
-				// 				GoogleService.addContacts(contactBox, diff, function(err) {
-				// 					if (err) {
-				// 						logger.debug('Error to add contacts in ' + contactBox.email);
-				// 						logger.debug(err);
-				// 						return;
-				// 					}
-				// 				});
-				// 			}
-				// 		});
-				// 	});
-				// } else {
-				// 	logger.debug('No new contacts in the main email.');
-				// }
+				if (toCreate.length > 0) {
+					logger.debug('There are new contacts in the main email.');
+					logger.debug('Adding new contacts in each registered contact box.');
+					ContactBox.find().exec(function(err, contactBoxes) {
+						contactBoxes.forEach(function(contactBox) {
+							if (contactBox.email !== MAIN_EMAIL) {
+								logger.debug('Adding new contacts in ' + contactBox.email);
+								GoogleService.addContacts(contactBox, toCreate, function(err, createdContacts) {
+									if (err) {
+										logger.debug('Error to add contacts in ' + contactBox.email);
+										logger.debug(err);
+										return;
+									}
+
+									createdContacts.forEach(function(contactArray) {
+										contactArray.forEach(function(contact) {
+											let toSave = toCreate.filter(function(create) {
+												return contact.email === create.email &&
+													contact.name === create.name &&
+													contact.phoneNumber === create.phoneNumber;
+											});
+											if (!toSave[0].otherIds) {
+												toSave[0].otherIds = [];
+											}
+											toSave[0].otherIds.push({
+												email: contactBox.email,
+												id: contact.id
+											});
+										});
+									});
+								});
+							}
+						});
+
+						// TODO passar para cima
+						logger.debug('Adding new contacts in database.');
+						Contact.collection.insert(toCreate, function(err, newContacts) {
+							if (err) {
+								logger.debug('Error to update contacts from database.');
+								logger.debug(err);
+								return;
+							}
+
+							logger.debug(newContacts.ops.length + ' new contacts added to database.');
+						});
+					});
+				} else {
+					logger.debug('No new contacts in the main email.');
+				}
 
 
 				// TODO atualizar ultima data de checagem no contactBox
