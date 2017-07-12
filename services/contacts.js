@@ -119,7 +119,7 @@ let updateContactsByMainEmail = function() {
 							if (contactBox.email !== MAIN_EMAIL) {
 								addContactsPromises.push(new Promise(function(resolve) {
 									logger.debug('Adding new contacts in ' + contactBox.email);
-									GoogleService.operateContacts(contactBox, toCreate, 'create', function(err, createdContacts) {
+									createContacts(contactBox, toCreate, function(err) {
 										if (err) {
 											logger.debug('Error to add contacts in ' + contactBox.email);
 											logger.debug(err);
@@ -128,25 +128,36 @@ let updateContactsByMainEmail = function() {
 											return;
 										}
 
-										createdContacts.forEach(function(contactArray) {
-											contactArray.forEach(function(contact) {
-												let toSave = toCreate.filter(function(create) {
-													return contact.email === create.email &&
-														contact.name === create.name &&
-														contact.phoneNumber === create.phoneNumber;
-												});
-												if (!toSave[0].otherIds) {
-													toSave[0].otherIds = [];
-												}
-												toSave[0].otherIds.push({
-													email: contactBox.email,
-													id: contact.id
-												});
-											});
-										});
-
 										resolve();
 									});
+									// GoogleService.operateContacts(contactBox, toCreate, 'create', function(err, createdContacts) {
+									// 	if (err) {
+									// 		logger.debug('Error to add contacts in ' + contactBox.email);
+									// 		logger.debug(err);
+									//
+									// 		rollbackLastCheckDate();
+									// 		return;
+									// 	}
+									//
+									// 	createdContacts.forEach(function(contactArray) {
+									// 		contactArray.forEach(function(contact) {
+									// 			let toSave = toCreate.filter(function(create) {
+									// 				return contact.email === create.email &&
+									// 					contact.name === create.name &&
+									// 					contact.phoneNumber === create.phoneNumber;
+									// 			});
+									// 			if (!toSave[0].otherIds) {
+									// 				toSave[0].otherIds = [];
+									// 			}
+									// 			toSave[0].otherIds.push({
+									// 				email: contactBox.email,
+									// 				id: contact.id
+									// 			});
+									// 		});
+									// 	});
+									//
+									// 	resolve();
+									// });
 								}));
 							}
 						});
@@ -167,9 +178,6 @@ let updateContactsByMainEmail = function() {
 				} else {
 					logger.debug('No modified contacts in the main email.');
 				}
-
-
-				// TODO atualizar ultima data de checagem no contactBox
 			});
 		});
 	});
@@ -199,6 +207,35 @@ let updateLastChackDate = function(email, newCheckDate) {
 let rollbackLastCheckDate = function() {
 	logger.debug('Rolling back last check date.');
 	updateLastChackDate(MAIN_EMAIL, rollbackDate);
+};
+
+let createContacts = function(contactBox, toCreate, callback) {
+	GoogleService.operateContacts(contactBox, toCreate, 'create', function(err, createdContacts) {
+		if (err) {
+			return callback(err);
+		}
+
+		createdContacts.forEach(function(contactArray) {
+			if (contactArray) {
+				contactArray.forEach(function(contact) {
+					let toSave = toCreate.filter(function(create) {
+						return contact.email === create.email &&
+							contact.name === create.name &&
+							contact.phoneNumber === create.phoneNumber;
+					});
+					if (!toSave[0].otherIds) {
+						toSave[0].otherIds = [];
+					}
+					toSave[0].otherIds.push({
+						email: contactBox.email,
+						id: contact.id
+					});
+				});
+			}
+		});
+
+		callback(null);
+	});
 };
 
 exports.registerContactBox = registerContactBox;
