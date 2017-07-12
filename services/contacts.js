@@ -99,47 +99,53 @@ let updateContactsByMainEmail = function() {
 				if (toCreate.length > 0) {
 					logger.debug('There are new contacts in the main email.');
 					logger.debug('Adding new contacts in each registered contact box.');
+					let addContactsPromises = [];
 					ContactBox.find().exec(function(err, contactBoxes) {
 						contactBoxes.forEach(function(contactBox) {
 							if (contactBox.email !== MAIN_EMAIL) {
-								logger.debug('Adding new contacts in ' + contactBox.email);
-								GoogleService.addContacts(contactBox, toCreate, function(err, createdContacts) {
-									if (err) {
-										logger.debug('Error to add contacts in ' + contactBox.email);
-										logger.debug(err);
-										return;
-									}
+								addContactsPromises.push(new Promise(function(resolve) {
+									logger.debug('Adding new contacts in ' + contactBox.email);
+									GoogleService.addContacts(contactBox, toCreate, function(err, createdContacts) {
+										if (err) {
+											logger.debug('Error to add contacts in ' + contactBox.email);
+											logger.debug(err);
+											return;
+										}
 
-									createdContacts.forEach(function(contactArray) {
-										contactArray.forEach(function(contact) {
-											let toSave = toCreate.filter(function(create) {
-												return contact.email === create.email &&
-													contact.name === create.name &&
-													contact.phoneNumber === create.phoneNumber;
-											});
-											if (!toSave[0].otherIds) {
-												toSave[0].otherIds = [];
-											}
-											toSave[0].otherIds.push({
-												email: contactBox.email,
-												id: contact.id
+										createdContacts.forEach(function(contactArray) {
+											contactArray.forEach(function(contact) {
+												let toSave = toCreate.filter(function(create) {
+													return contact.email === create.email &&
+														contact.name === create.name &&
+														contact.phoneNumber === create.phoneNumber;
+												});
+												if (!toSave[0].otherIds) {
+													toSave[0].otherIds = [];
+												}
+												toSave[0].otherIds.push({
+													email: contactBox.email,
+													id: contact.id
+												});
 											});
 										});
+
+										resolve();
 									});
-								});
+								}));
 							}
 						});
 
-						// TODO passar para cima
-						logger.debug('Adding new contacts in database.');
-						Contact.collection.insert(toCreate, function(err, newContacts) {
-							if (err) {
-								logger.debug('Error to update contacts from database.');
-								logger.debug(err);
-								return;
-							}
+						Promise.all(addContactsPromises).then(function() {
+							logger.debug('Adding new contacts in database.');
+							Contact.collection.insert(toCreate, function(err, newContacts) {
+								if (err) {
+									logger.debug('Error to update contacts from database.');
+									logger.debug(err);
+									return;
+								}
 
-							logger.debug(newContacts.ops.length + ' new contacts added to database.');
+								logger.debug(newContacts.ops.length + ' new contacts added to database.');
+							});
 						});
 					});
 				} else {
