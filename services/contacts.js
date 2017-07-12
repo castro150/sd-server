@@ -168,7 +168,7 @@ let updateContactsByMainEmail = function() {
 						});
 					});
 				} else {
-					logger.debug('No new contacts in the main email.');
+					logger.debug('No modified contacts in the main email.');
 				}
 
 

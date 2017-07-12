@@ -63,7 +63,7 @@ let getContacts = function(contactBox, updatedMin, callback) {
 	} else {
 		let path = '/m8/feeds/contacts/default/full?max-results=10000&showdeleted=true';
 		if (updatedMin) {
-			path += '&updated-min=' + '2017-07-10T00:00:00';
+			path += '&updated-min=' + updatedMin.toISOString();
 		}
 		let options = {
 			host: 'www.google.com',
@@ -87,7 +87,7 @@ let getContacts = function(contactBox, updatedMin, callback) {
 				if (response.statusCode === 200) {
 					xmlParser.parseString(returnedData, function(err, googleContacts) {
 						let allContacts = googleContactsToEntity(googleContacts);
-						logger.debug(allContacts.contacts.length + ' contacts found for ' + contactBox.email);
+						logger.debug(allContacts.contacts.length + ' modified contacts found for ' + contactBox.email);
 						callback(null, allContacts);
 					});
 				} else {
@@ -271,24 +271,26 @@ let createBatchContactsXml = function(email, contacts, operation) {
 let googleContactsToEntity = function(googleContacts) {
 	let contacts = [];
 	let deleted = [];
-	googleContacts.feed.entry.forEach(function(googleEntry) {
-		let contact = {};
-		contact.id = googleEntry.id[0];
-		if (googleEntry['gd:deleted']) {
-			deleted.push(contact);
-		} else {
-			if (googleEntry['gd:email']) {
-				contact.email = googleEntry['gd:email'][0].$.address;
+	if (googleContacts.feed.entry) {
+		googleContacts.feed.entry.forEach(function(googleEntry) {
+			let contact = {};
+			contact.id = googleEntry.id[0];
+			if (googleEntry['gd:deleted']) {
+				deleted.push(contact);
+			} else {
+				if (googleEntry['gd:email']) {
+					contact.email = googleEntry['gd:email'][0].$.address;
+				}
+				if (googleEntry['gd:name']) {
+					contact.name = googleEntry['gd:name'][0]['gd:fullName'][0];
+				}
+				if (googleEntry['gd:phoneNumber']) {
+					contact.phoneNumber = googleEntry['gd:phoneNumber'][0].$.uri;
+				}
+				contacts.push(contact);
 			}
-			if (googleEntry['gd:name']) {
-				contact.name = googleEntry['gd:name'][0]['gd:fullName'][0];
-			}
-			if (googleEntry['gd:phoneNumber']) {
-				contact.phoneNumber = googleEntry['gd:phoneNumber'][0].$.uri;
-			}
-			contacts.push(contact);
-		}
-	});
+		});
+	}
 
 	return {
 		contacts: contacts,
