@@ -105,7 +105,7 @@ let updateContactsByMainEmail = function() {
 							if (contactBox.email !== MAIN_EMAIL) {
 								addContactsPromises.push(new Promise(function(resolve) {
 									logger.debug('Adding new contacts in ' + contactBox.email);
-									GoogleService.addContacts(contactBox, toCreate, function(err, createdContacts) {
+									GoogleService.operateContacts(contactBox, toCreate, 'create', function(err, createdContacts) {
 										if (err) {
 											logger.debug('Error to add contacts in ' + contactBox.email);
 											logger.debug(err);

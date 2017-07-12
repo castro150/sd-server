@@ -104,7 +104,7 @@ let getContacts = function(contactBox, callback) {
 	}
 };
 
-let addContacts = function(contactBox, contacts, callback) {
+let operateContacts = function(contactBox, contacts, operation, callback) {
 	let now = new Date();
 	if (now.getTime() >= contactBox.tokens.expiry_date) {
 		refreshToken(contactBox, function(err, refreshedContactBox) {
@@ -112,7 +112,7 @@ let addContacts = function(contactBox, contacts, callback) {
 				return callback(err);
 			}
 
-			return addContacts(refreshedContactBox, contacts, callback);
+			return operateContacts(refreshedContactBox, contacts, operation, callback);
 		});
 	} else {
 		let options = {
@@ -128,7 +128,8 @@ let addContacts = function(contactBox, contacts, callback) {
 
 		let batchIndex = 0;
 		let promises = [];
-		logger.debug('Sending contacts to Google: ' + contactBox.email);
+		logger.debug('Sending contacts to Google: ' + contactBox.email + '. Operation: ' + operation);
+		// TODO IMPORTANTE ACERTAR ISSO!!!
 		// for (let i = 0, j = contacts.length; i < j; i += 100) {
 		for (let i = 0, j = contacts.length; i < j; i += 2) {
 			promises.push(new Promise(function(resolve, reject) {
@@ -145,7 +146,7 @@ let addContacts = function(contactBox, contacts, callback) {
 						batchIndex++;
 						if (response.statusCode === 200) {
 							xmlParser.parseString(returnedData, function(err, batchResponse) {
-								logger.debug('New contacts added to ' + contactBox.email + ', batch ' + batchIndex);
+								logger.debug('Operation: ' + operation + ' to ' + contactBox.email + ' with success, batch ' + batchIndex);
 								logger.file('log-' + contactBox.email + batchIndex + '.log').debug(returnedData);
 								let contacts = googleContactsToEntity(batchResponse).contacts;
 								resolve(contacts);
@@ -166,15 +167,15 @@ let addContacts = function(contactBox, contacts, callback) {
 					reject(err);
 				});
 
-				request.write(createContactsXml(contactBox.email, subcontacts));
+				request.write(createBatchContactsXml(contactBox.email, subcontacts, operation));
 				request.end();
 			}).catch(function(err) {
-				callback(err);
+				return callback(err);
 			}));
 		}
 
 		Promise.all(promises).then(function(createdContacts) {
-			callback(null, createdContacts);
+			return callback(null, createdContacts);
 		}).catch(function(err) {
 			logger.debug('Error to execute all promises to add google contacts requests.');
 			logger.debug(err);
@@ -211,7 +212,7 @@ let refreshToken = function(contactBox, callback) {
 	});
 };
 
-let createContactsXml = function(email, contacts) {
+let createBatchContactsXml = function(email, contacts, operation) {
 	let writer = new XMLWriter();
 	writer.startDocument('1.0', 'UTF-8')
 		.startElement('feed')
@@ -225,7 +226,7 @@ let createContactsXml = function(email, contacts) {
 		let familyName = names.slice(1, names.length).join(' ');
 
 		writer.startElement('entry')
-			.startElement('batch:id').text('create').endElement()
+			.startElement('batch:id').text(operation).endElement()
 			.startElement('batch:operation').writeAttribute('type', 'insert').endElement()
 			.startElement('category')
 			.writeAttribute('scheme', 'http://schemas.google.com/g/2005#kind')
@@ -294,4 +295,4 @@ let googleContactsToEntity = function(googleContacts) {
 exports.generateAuthUrl = generateAuthUrl;
 exports.authenticate = authenticate;
 exports.getContacts = getContacts;
-exports.addContacts = addContacts;
+exports.operateContacts = operateContacts;
