@@ -183,6 +183,7 @@ let operateContacts = function(contactBox, contacts, operation, callback) {
 		}).catch(function(err) {
 			logger.debug('Error to execute all promises to add google contacts requests.');
 			logger.debug(err);
+			return callback(err);
 		});
 	}
 };

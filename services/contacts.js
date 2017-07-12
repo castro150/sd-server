@@ -76,30 +76,17 @@ let updateContactsByMainEmail = function() {
 				return;
 			}
 
-			logger.debug('Updating last check date for ' + mainBox.email);
-			ContactBox.findOneAndUpdate({
-				email: mainBox.email
-			}, {
-				$set: {
-					lastCheck: new Date()
-				}
-			}, {
-				new: true
-			}, function(err) {
-				if (err) {
-					logger.debug('Error to update last check date for ' + mainBox.email);
-					logger.debug(err);
-					return;
-				}
-
-				logger.debug('Success to update last check date for ' + mainBox.email);
-			});
+			let rollBackDate = mainBox.lastCheck;
+			updateLastChackDate(mainBox.email, new Date());
 
 			logger.debug('Getting database contacts.');
 			Contact.find().exec(function(err, savedContacts) {
 				if (err) {
 					logger.debug('Error to get contacts from database.');
 					logger.debug(err);
+
+					logger.debug('Rolling back last check date.');
+					updateLastChackDate(mainBox.email, rollBackDate);
 					return;
 				}
 
@@ -120,6 +107,15 @@ let updateContactsByMainEmail = function() {
 					logger.debug('Adding new contacts in each registered contact box.');
 					let addContactsPromises = [];
 					ContactBox.find().exec(function(err, contactBoxes) {
+						if (err) {
+							logger.debug('Error to get contact boxes from database.');
+							logger.debug(err);
+
+							logger.debug('Rolling back last check date.');
+							updateLastChackDate(mainBox.email, rollBackDate);
+							return;
+						}
+
 						contactBoxes.forEach(function(contactBox) {
 							if (contactBox.email !== MAIN_EMAIL) {
 								addContactsPromises.push(new Promise(function(resolve) {
@@ -128,6 +124,9 @@ let updateContactsByMainEmail = function() {
 										if (err) {
 											logger.debug('Error to add contacts in ' + contactBox.email);
 											logger.debug(err);
+
+											logger.debug('Rolling back last check date.');
+											updateLastChackDate(mainBox.email, rollBackDate);
 											return;
 										}
 
@@ -177,6 +176,27 @@ let updateContactsByMainEmail = function() {
 		});
 	});
 };
+
+let updateLastChackDate = function(email, newCheckDate) {
+	logger.debug('Updating last check date for ' + email);
+	ContactBox.findOneAndUpdate({
+		email: email
+	}, {
+		$set: {
+			lastCheck: newCheckDate
+		}
+	}, {
+		new: true
+	}, function(err) {
+		if (err) {
+			logger.debug('Error to update last check date for ' + email);
+			logger.debug(err);
+			return;
+		}
+
+		logger.debug('Success to update last check date for ' + email);
+	});
+}
 
 exports.registerContactBox = registerContactBox;
 exports.watchMainEmail = watchMainEmail;
