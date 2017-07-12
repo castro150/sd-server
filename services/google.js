@@ -58,7 +58,7 @@ let getContacts = function(contactBox, updatedMin, callback) {
 				return callback(err);
 			}
 
-			return getContacts(refreshedContactBox, callback);
+			return getContacts(refreshedContactBox, updatedMin, callback);
 		});
 	} else {
 		let path = '/m8/feeds/contacts/default/full?max-results=10000&showdeleted=true';

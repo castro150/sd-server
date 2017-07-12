@@ -12,6 +12,7 @@ const MAIN_EMAIL = properties.get('google.contacts.main.email');
 const WAIT_TIME = parseInt(properties.get('google.contacts.watch.wait.time'));
 
 let mainEmailWatcher = null;
+let rollbackDate;
 
 let registerContactBox = function(email, googleTokens, callback) {
 	let newBox = new ContactBox({
@@ -76,8 +77,8 @@ let updateContactsByMainEmail = function() {
 				return;
 			}
 
-			let rollBackDate = mainBox.lastCheck;
-			updateLastChackDate(mainBox.email, new Date());
+			rollbackDate = mainBox.lastCheck;
+			updateLastChackDate(MAIN_EMAIL, new Date());
 
 			logger.debug('Getting database contacts.');
 			Contact.find().exec(function(err, savedContacts) {
@@ -85,8 +86,7 @@ let updateContactsByMainEmail = function() {
 					logger.debug('Error to get contacts from database.');
 					logger.debug(err);
 
-					logger.debug('Rolling back last check date.');
-					updateLastChackDate(mainBox.email, rollBackDate);
+					rollbackLastCheckDate();
 					return;
 				}
 
@@ -111,8 +111,7 @@ let updateContactsByMainEmail = function() {
 							logger.debug('Error to get contact boxes from database.');
 							logger.debug(err);
 
-							logger.debug('Rolling back last check date.');
-							updateLastChackDate(mainBox.email, rollBackDate);
+							rollbackLastCheckDate();
 							return;
 						}
 
@@ -125,8 +124,7 @@ let updateContactsByMainEmail = function() {
 											logger.debug('Error to add contacts in ' + contactBox.email);
 											logger.debug(err);
 
-											logger.debug('Rolling back last check date.');
-											updateLastChackDate(mainBox.email, rollBackDate);
+											rollbackLastCheckDate();
 											return;
 										}
 
@@ -196,7 +194,12 @@ let updateLastChackDate = function(email, newCheckDate) {
 
 		logger.debug('Success to update last check date for ' + email);
 	});
-}
+};
+
+let rollbackLastCheckDate = function() {
+	logger.debug('Rolling back last check date.');
+	updateLastChackDate(MAIN_EMAIL, rollbackDate);
+};
 
 exports.registerContactBox = registerContactBox;
 exports.watchMainEmail = watchMainEmail;
