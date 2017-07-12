@@ -50,7 +50,7 @@ let authenticate = function(code, callback) {
 	});
 };
 
-let getContacts = function(contactBox, callback) {
+let getContacts = function(contactBox, updatedMin, callback) {
 	let now = new Date();
 	if (now.getTime() >= contactBox.tokens.expiry_date) {
 		refreshToken(contactBox, function(err, refreshedContactBox) {
@@ -61,9 +61,13 @@ let getContacts = function(contactBox, callback) {
 			return getContacts(refreshedContactBox, callback);
 		});
 	} else {
+		let path = '/m8/feeds/contacts/default/full?max-results=10000&showdeleted=true';
+		if (updatedMin) {
+			path += '&updated-min=' + '2017-07-10T00:00:00';
+		}
 		let options = {
 			host: 'www.google.com',
-			path: '/m8/feeds/contacts/default/full?max-results=10000&showdeleted=true' + '&updated-min=2017-07-10T00:00:00',
+			path: path,
 			method: 'GET',
 			headers: {
 				'Content-Type': 'application/atom+xml',

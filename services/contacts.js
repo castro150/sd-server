@@ -69,12 +69,31 @@ let updateContactsByMainEmail = function() {
 		}
 
 		logger.debug('Getting main email contacts.');
-		GoogleService.getContacts(mainBox, function(err, allContacts) {
+		GoogleService.getContacts(mainBox, mainBox.lastCheck, function(err, allContacts) {
 			if (err) {
 				logger.debug('Error to get contacts from google.');
 				logger.debug(err);
 				return;
 			}
+
+			logger.debug('Updating last check date for ' + mainBox.email);
+			ContactBox.findOneAndUpdate({
+				email: mainBox.email
+			}, {
+				$set: {
+					lastCheck: new Date()
+				}
+			}, {
+				new: true
+			}, function(err) {
+				if (err) {
+					logger.debug('Error to update last check date for ' + mainBox.email);
+					logger.debug(err);
+					return;
+				}
+
+				logger.debug('Success to update last check date for ' + mainBox.email);
+			});
 
 			logger.debug('Getting database contacts.');
 			Contact.find().exec(function(err, savedContacts) {
