@@ -130,34 +130,6 @@ let updateContactsByMainEmail = function() {
 
 										resolve();
 									});
-									// GoogleService.operateContacts(contactBox, toCreate, 'create', function(err, createdContacts) {
-									// 	if (err) {
-									// 		logger.debug('Error to add contacts in ' + contactBox.email);
-									// 		logger.debug(err);
-									//
-									// 		rollbackLastCheckDate();
-									// 		return;
-									// 	}
-									//
-									// 	createdContacts.forEach(function(contactArray) {
-									// 		contactArray.forEach(function(contact) {
-									// 			let toSave = toCreate.filter(function(create) {
-									// 				return contact.email === create.email &&
-									// 					contact.name === create.name &&
-									// 					contact.phoneNumber === create.phoneNumber;
-									// 			});
-									// 			if (!toSave[0].otherIds) {
-									// 				toSave[0].otherIds = [];
-									// 			}
-									// 			toSave[0].otherIds.push({
-									// 				email: contactBox.email,
-									// 				id: contact.id
-									// 			});
-									// 		});
-									// 	});
-									//
-									// 	resolve();
-									// });
 								}));
 							}
 						});
