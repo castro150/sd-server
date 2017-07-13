@@ -229,11 +229,19 @@ let createBatchContactsXml = function(email, contacts, operation) {
 	contacts.forEach(function(contact) {
 		let names = contact.name.split(' ');
 		let familyName = names.slice(1, names.length).join(' ');
+		if (operation != 'create') {
+			contact.id = contact.id.replace('/base/', '/full/');
+		}
 
 		writer.startElement('entry')
-			.startElement('batch:id').text(operation).endElement()
-			.startElement('batch:operation').writeAttribute('type', 'insert').endElement()
-			.startElement('category')
+			.startElement('batch:id').text(operation).endElement();
+		if (operation != 'create') {
+			writer.startElement('batch:operation').writeAttribute('type', operation).endElement()
+				.startElement('id').text(contact.id).endElement();
+		} else {
+			writer.startElement('batch:operation').writeAttribute('type', 'insert').endElement();
+		}
+		writer.startElement('category')
 			.writeAttribute('scheme', 'http://schemas.google.com/g/2005#kind')
 			.writeAttribute('term', 'http://schemas.google.com/g/2008#contact')
 			.endElement()
