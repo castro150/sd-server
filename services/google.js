@@ -233,13 +233,15 @@ let createBatchContactsXml = function(email, contacts, operation) {
 			contact.id = contact.id.replace('/base/', '/full/');
 		}
 
-		writer.startElement('entry')
-			.startElement('batch:id').text(operation).endElement();
 		if (operation != 'create') {
-			writer.startElement('batch:operation').writeAttribute('type', operation).endElement()
+			writer.startElement('entry').writeAttribute('gd:etag', '*')
+				.startElement('batch:id').text(operation).endElement()
+				.startElement('batch:operation').writeAttribute('type', operation).endElement()
 				.startElement('id').text(contact.id).endElement();
 		} else {
-			writer.startElement('batch:operation').writeAttribute('type', 'insert').endElement();
+			writer.startElement('entry')
+				.startElement('batch:id').text(operation).endElement()
+				.startElement('batch:operation').writeAttribute('type', 'insert').endElement();
 		}
 		writer.startElement('category')
 			.writeAttribute('scheme', 'http://schemas.google.com/g/2005#kind')
