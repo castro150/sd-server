@@ -2,6 +2,7 @@
 
 const mongoose = require('mongoose');
 const properties = require('properties-reader')('./config/application.properties');
+const extend = require('util')._extend;
 
 const logger = require('config/logger.js');
 const Contact = mongoose.model('Contact');
@@ -102,10 +103,11 @@ let updateContactsByMainEmail = function() {
 					}).length === 0;
 				});
 
-				if (toCreate.length > 0) {
-					logger.debug('There are new contacts in the main email.');
-					logger.debug('Adding new contacts in each registered contact box.');
+				if (toCreate.length > 0 || toUpdate.length > 0) {
+					logger.debug('There are modified contacts in the main email.');
+					logger.debug('Modifing contacts in each registered contact box.');
 					let addContactsPromises = [];
+					let updateContactsPromises = [];
 					ContactBox.find().exec(function(err, contactBoxes) {
 						if (err) {
 							logger.debug('Error to get contact boxes from database.');
@@ -117,35 +119,135 @@ let updateContactsByMainEmail = function() {
 
 						contactBoxes.forEach(function(contactBox) {
 							if (contactBox.email !== MAIN_EMAIL) {
-								addContactsPromises.push(new Promise(function(resolve) {
-									logger.debug('Adding new contacts in ' + contactBox.email);
-									createContacts(contactBox, toCreate, function(err) {
-										if (err) {
-											logger.debug('Error to add contacts in ' + contactBox.email);
-											logger.debug(err);
+								if (toCreate.length > 0) {
+									addContactsPromises.push(new Promise(function(resolve) {
+										logger.debug('Adding new contacts in ' + contactBox.email);
+										createContacts(contactBox, toCreate, function(err) {
+											if (err) {
+												logger.debug('Error to add contacts in ' + contactBox.email);
+												logger.debug(err);
 
-											rollbackLastCheckDate();
-											return;
+												rollbackLastCheckDate();
+												return;
+											}
+
+											resolve();
+										});
+									}));
+								}
+
+								if (toUpdate.length > 0) {
+									let toUpdateThisBox = [];
+									let toCreateThisBox = [];
+									toUpdate.forEach(function(contact) {
+										if (contact.otherIds) {
+											let thisId = contact.otherIds.filter(function(otherId) {
+												return otherId.email === contactBox.email;
+											});
+											if (thisId.length > 0) {
+												let cloneContact = extend({}, contact);
+												cloneContact.id = thisId[0].id;
+												toUpdateThisBox.push(cloneContact);
+											} else {
+												// toCreateThisBox.push(extend({}, contact));
+												toCreateThisBox.push(contact);
+											}
+										} else {
+											// toCreateThisBox.push(extend({}, contact));
+											toCreateThisBox.push(contact);
 										}
-
-										resolve();
 									});
-								}));
+
+									if (toUpdateThisBox.length > 0) {
+										updateContactsPromises.push(new Promise(function(resolve) {
+											logger.debug('Updating contacts in ' + contactBox.email);
+											updateContacts(contactBox, toUpdateThisBox, function(err) {
+												if (err) {
+													logger.debug('Error to add update in ' + contactBox.email);
+													logger.debug(err);
+
+													rollbackLastCheckDate();
+													return;
+												}
+
+												resolve();
+											});
+										}));
+									}
+
+									if (toCreateThisBox.length > 0) {
+										updateContactsPromises.push(new Promise(function(resolve) {
+											logger.debug('Adding new contacts from update in ' + contactBox.email);
+											createContacts(contactBox, toCreateThisBox, function(err) {
+												if (err) {
+													logger.debug('Error to add contacts from update in ' + contactBox.email);
+													logger.debug(err);
+
+													rollbackLastCheckDate();
+													return;
+												}
+
+												// toCreateThisBox.forEach(function(inThisBox) {
+												// 	inToCreate = toUpdate.filter(function(create) {
+												// 		return create.id === inThisBox.id;
+												// 	});
+												// 	inToCreate.otherIds = inThisBox.otherIds;
+												// });
+
+												resolve();
+											});
+										}));
+									}
+								}
 							}
 						});
 
-						Promise.all(addContactsPromises).then(function() {
-							logger.debug('Adding new contacts in database.');
-							Contact.collection.insert(toCreate, function(err, newContacts) {
-								if (err) {
-									logger.debug('Error to update contacts from database.');
-									logger.debug(err);
-									return;
-								}
+						if (addContactsPromises.length > 0) {
+							Promise.all(addContactsPromises).then(function() {
+								logger.debug('Adding new contacts in database.');
+								Contact.collection.insert(toCreate, function(err, newContacts) {
+									if (err) {
+										logger.debug('Error to add contacts in database.');
+										logger.debug(err);
 
-								logger.debug(newContacts.ops.length + ' new contacts added to database.');
+										rollbackLastCheckDate();
+										return;
+									}
+
+									logger.debug(newContacts.ops.length + ' new contacts added to database.');
+								});
 							});
-						});
+						}
+
+						if (updateContactsPromises.length) {
+							Promise.all(updateContactsPromises).then(function() {
+								logger.debug('Updating contacts in database.');
+								let bulk = Contact.collection.initializeOrderedBulkOp();
+								toUpdate.forEach(function(update) {
+									bulk.find({
+										id: update.id
+									}).update({
+										$set: {
+											name: update.name,
+											email: update.email,
+											phoneNumber: update.phoneNumber,
+											otherIds: update.otherIds
+										}
+									});
+								});
+								bulk.execute(function(err) {
+									if (err) {
+										logger.debug('Error to update contacts in database.');
+										logger.debug(err);
+
+										rollbackLastCheckDate();
+										return;
+									}
+
+									logger.debug('Updated contacts in database with success.');
+								});
+							});
+						}
 					});
 				} else {
 					logger.debug('No modified contacts in the main email.');
@@ -207,6 +309,16 @@ let createContacts = function(contactBox, toCreate, callback) {
 		});
 
 		callback(null);
+	});
+};
+
+let updateContacts = function(contactBox, toUpdate, callback) {
+	GoogleService.operateContacts(contactBox, toUpdate, 'update', function(err, updatedContacts) {
+		if (err) {
+			return callback(err);
+		}
+
+		callback(null, updatedContacts);
 	});
 };
 
