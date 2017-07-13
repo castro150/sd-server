@@ -149,11 +149,9 @@ let updateContactsByMainEmail = function() {
 												cloneContact.id = thisId[0].id;
 												toUpdateThisBox.push(cloneContact);
 											} else {
-												// toCreateThisBox.push(extend({}, contact));
 												toCreateThisBox.push(contact);
 											}
 										} else {
-											// toCreateThisBox.push(extend({}, contact));
 											toCreateThisBox.push(contact);
 										}
 									});
@@ -186,13 +184,6 @@ let updateContactsByMainEmail = function() {
 													rollbackLastCheckDate();
 													return;
 												}
-
-												// toCreateThisBox.forEach(function(inThisBox) {
-												// 	inToCreate = toUpdate.filter(function(create) {
-												// 		return create.id === inThisBox.id;
-												// 	});
-												// 	inToCreate.otherIds = inThisBox.otherIds;
-												// });
 
 												resolve();
 											});
