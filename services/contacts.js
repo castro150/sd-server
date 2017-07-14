@@ -345,16 +345,17 @@ let createContacts = function(contactBox, toCreate, callback) {
 				contactArray.forEach(function(contact) {
 					let toSave = toCreate.filter(function(create) {
 						return contact.email === create.email &&
-							contact.name === create.name &&
-							contact.phoneNumber === create.phoneNumber;
+							contact.name === create.name;
 					});
-					if (!toSave[0].otherIds) {
-						toSave[0].otherIds = [];
+					if (toSave.length > 0) {
+						if (!toSave[0].otherIds) {
+							toSave[0].otherIds = [];
+						}
+						toSave[0].otherIds.push({
+							email: contactBox.email,
+							id: contact.id
+						});
 					}
-					toSave[0].otherIds.push({
-						email: contactBox.email,
-						id: contact.id
-					});
 				});
 			}
 		});

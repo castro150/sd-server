@@ -224,7 +224,7 @@ let createBatchContactsXml = function(email, contacts, operation) {
 		.writeAttribute('xmlns:batch', 'http://schemas.google.com/gdata/batch');
 
 	contacts.forEach(function(contact) {
-		let names = contact.name.split(' ');
+		let names = !contact.name ? [] : contact.name.split(' ');
 		let familyName = names.slice(1, names.length).join(' ');
 		if (operation != 'create') {
 			contact.id = contact.id.replace('/base/', '/full/');
@@ -243,12 +243,14 @@ let createBatchContactsXml = function(email, contacts, operation) {
 		writer.startElement('category')
 			.writeAttribute('scheme', 'http://schemas.google.com/g/2005#kind')
 			.writeAttribute('term', 'http://schemas.google.com/g/2008#contact')
-			.endElement()
-			.startElement('gd:name')
-			.startElement('gd:fullName').text(contact.name).endElement()
-			.startElement('gd:givenName').text(names[0]).endElement()
-			.startElement('gd:familyName').text(familyName).endElement()
 			.endElement();
+		if (names.length > 0) {
+			writer.startElement('gd:name')
+				.startElement('gd:fullName').text(contact.name).endElement()
+				.startElement('gd:givenName').text(names[0]).endElement()
+				.startElement('gd:familyName').text(familyName).endElement()
+				.endElement();
+		}
 		if (contact.email !== undefined && contact.email !== null && contact.email !== '') {
 			writer.startElement('gd:email')
 				.writeAttribute('rel', 'http://schemas.google.com/g/2005#home')
