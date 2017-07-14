@@ -102,12 +102,34 @@ let updateContactsByMainEmail = function() {
 						return elem2.id === elem1.id;
 					}).length === 0;
 				});
+				let toDelete = {};
+				toDelete.contactBoxes = [];
+				toDelete.savedIds = [];
+				allContacts.deleted.forEach(function(deleted) {
+					savedContacts.forEach(function(saved) {
+						if (deleted.id === saved.id) {
+							toDelete.savedIds.push(saved._id);
+							if (saved.otherIds) {
+								saved.otherIds.forEach(function(otherId) {
+									toDelete.contactBoxes[otherId.email] = !toDelete.contactBoxes[otherId.email] ? [] : toDelete.contactBoxes[otherId.email];
+									toDelete.contactBoxes[otherId.email].push({
+										id: otherId.id,
+										email: saved.email,
+										name: saved.name,
+										phoneNumber: saved.phoneNumber
+									});
+								});
+							}
+						}
+					});
+				});
 
-				if (toCreate.length > 0 || toUpdate.length > 0) {
+				if (toCreate.length > 0 || toUpdate.length > 0 || toDelete.savedIds.length > 0) {
 					logger.debug('There are modified contacts in the main email.');
 					logger.debug('Modifing contacts in each registered contact box.');
 					let addContactsPromises = [];
 					let updateContactsPromises = [];
+					let deleteContactsPromises = [];
 					ContactBox.find().exec(function(err, contactBoxes) {
 						if (err) {
 							logger.debug('Error to get contact boxes from database.');
@@ -161,7 +183,7 @@ let updateContactsByMainEmail = function() {
 											logger.debug('Updating contacts in ' + contactBox.email);
 											updateContacts(contactBox, toUpdateThisBox, function(err) {
 												if (err) {
-													logger.debug('Error to add update in ' + contactBox.email);
+													logger.debug('Error to update contacts in ' + contactBox.email);
 													logger.debug(err);
 
 													rollbackLastCheckDate();
@@ -190,6 +212,23 @@ let updateContactsByMainEmail = function() {
 										}));
 									}
 								}
+
+								if (toDelete.savedIds.length > 0 && toDelete.contactBoxes[contactBox.email]) {
+									deleteContactsPromises.push(new Promise(function(resolve) {
+										logger.debug('Deleting contacts in ' + contactBox.email);
+										deleteContacts(contactBox, toDelete.contactBoxes[contactBox.email], function(err) {
+											if (err) {
+												logger.debug('Error to delete contacts in ' + contactBox.email);
+												logger.debug(err);
+
+												rollbackLastCheckDate();
+												return;
+											}
+
+											resolve();
+										});
+									}));
+								}
 							}
 						});
 
@@ -210,7 +249,7 @@ let updateContactsByMainEmail = function() {
 							});
 						}
 
-						if (updateContactsPromises.length) {
+						if (updateContactsPromises.length > 0) {
 							Promise.all(updateContactsPromises).then(function() {
 								logger.debug('Updating contacts in database.');
 								let bulk = Contact.collection.initializeOrderedBulkOp();
@@ -236,6 +275,27 @@ let updateContactsByMainEmail = function() {
 									}
 
 									logger.debug('Updated contacts in database with success.');
+								});
+							});
+						}
+
+						if (deleteContactsPromises.length > 0) {
+							Promise.all(deleteContactsPromises).then(function() {
+								logger.debug('Deleting contacts in database.');
+								Contact.remove({
+									_id: {
+										$in: toDelete.savedIds
+									}
+								}, function(err) {
+									if (err) {
+										logger.debug('Error to delete contacts in database.');
+										logger.debug(err);
+
+										rollbackLastCheckDate();
+										return;
+									}
+
+									logger.debug('Deleted contacts in database with success.');
 								});
 							});
 						}
@@ -310,6 +370,16 @@ let updateContacts = function(contactBox, toUpdate, callback) {
 		}
 
 		callback(null, updatedContacts);
+	});
+};
+
+let deleteContacts = function(contactBox, toDelete, callback) {
+	GoogleService.operateContacts(contactBox, toDelete, 'delete', function(err, deletedContacts) {
+		if (err) {
+			return callback(err);
+		}
+
+		callback(null, deletedContacts);
 	});
 };
 

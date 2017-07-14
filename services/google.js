@@ -133,12 +133,9 @@ let operateContacts = function(contactBox, contacts, operation, callback) {
 		let batchIndex = 0;
 		let promises = [];
 		logger.debug('Sending contacts to Google: ' + contactBox.email + '. Operation: ' + operation);
-		// TODO IMPORTANTE ACERTAR ISSO!!!
-		// for (let i = 0, j = contacts.length; i < j; i += 100) {
-		for (let i = 0, j = contacts.length; i < j; i += 2) {
+		for (let i = 0, j = contacts.length; i < j; i += 100) {
 			promises.push(new Promise(function(resolve, reject) {
-				// let subcontacts = contacts.slice(i, i + 100);
-				let subcontacts = contacts.slice(i, i + 2);
+				let subcontacts = contacts.slice(i, i + 100);
 
 				let request = https.request(options, function(response) {
 					let returnedData = '';
