@@ -5,7 +5,8 @@ const https = require('https');
 const mongoose = require('mongoose');
 const google = require('googleapis');
 const OAuth2Client = google.auth.OAuth2;
-const GoogleContacts = require('google-contacts').GoogleContacts;
+const xml2js = require('xml2js');
+const xmlParser = new xml2js.Parser();
 const properties = require('properties-reader')('./config/application.properties');
 
 const logger = require('config/logger.js');
@@ -49,7 +50,7 @@ let authenticate = function(code, callback) {
 	});
 };
 
-let getContacts = function(contactBox, callback) {
+let getContacts = function(contactBox, updatedMin, callback) {
 	let now = new Date();
 	if (now.getTime() >= contactBox.tokens.expiry_date) {
 		refreshToken(contactBox, function(err, refreshedContactBox) {
@@ -57,29 +58,57 @@ let getContacts = function(contactBox, callback) {
 				return callback(err);
 			}
 
-			return getContacts(refreshedContactBox, callback);
+			return getContacts(refreshedContactBox, updatedMin, callback);
 		});
 	} else {
-		let contactsApi = new GoogleContacts({
-			consumerKey: CLIENT_ID,
-			consumerSecret: CLIENT_SECRET,
-			token: contactBox.tokens.access_token,
-			refreshToken: contactBox.tokens.refresh_token
-		});
+		let path = '/m8/feeds/contacts/default/full?max-results=10000&showdeleted=true';
+		if (updatedMin) {
+			path += '&updated-min=' + updatedMin.toISOString();
+		}
+		let options = {
+			host: 'www.google.com',
+			path: path,
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/atom+xml',
+				'GData-Version': '3.0',
+				'Authorization': 'Bearer ' + contactBox.tokens.access_token
+			}
+		};
 
 		logger.debug('Getting contacts from Google: ' + contactBox.email);
-		contactsApi.getContacts(function(err, contacts) {
-			if (err) {
-				return callback(err);
-			}
+		let request = https.request(options, function(response) {
+			let returnedData = '';
+			response.on('data', function(chunk) {
+				returnedData += chunk;
+			});
 
-			logger.debug(contacts.length + ' contacts found for ' + contactBox.email);
-			return callback(null, contacts);
+			response.on('end', function() {
+				if (response.statusCode === 200) {
+					xmlParser.parseString(returnedData, function(err, googleContacts) {
+						let allContacts = googleContactsToEntity(googleContacts);
+						logger.debug(allContacts.contacts.length + ' modified contacts found for ' + contactBox.email);
+						callback(null, allContacts);
+					});
+				} else {
+					callback('Error status: ' + response.statusCode);
+				}
+			});
+
+			response.on('error', function(err) {
+				callback(err);
+			});
 		});
+
+		request.on('error', function(err) {
+			callback(err);
+		});
+
+		request.end();
 	}
 };
 
-let addContacts = function(contactBox, contacts, callback) {
+let operateContacts = function(contactBox, contacts, operation, callback) {
 	let now = new Date();
 	if (now.getTime() >= contactBox.tokens.expiry_date) {
 		refreshToken(contactBox, function(err, refreshedContactBox) {
@@ -87,7 +116,7 @@ let addContacts = function(contactBox, contacts, callback) {
 				return callback(err);
 			}
 
-			return addContacts(refreshedContactBox, contacts, callback);
+			return operateContacts(refreshedContactBox, contacts, operation, callback);
 		});
 	} else {
 		let options = {
@@ -102,39 +131,57 @@ let addContacts = function(contactBox, contacts, callback) {
 		};
 
 		let batchIndex = 0;
-		logger.debug('Sending contacts to Google: ' + contactBox.email);
+		let promises = [];
+		logger.debug('Sending contacts to Google: ' + contactBox.email + '. Operation: ' + operation);
 		for (let i = 0, j = contacts.length; i < j; i += 100) {
-			let subcontacts = contacts.slice(i, i + 100);
+			promises.push(new Promise(function(resolve, reject) {
+				let subcontacts = contacts.slice(i, i + 100);
 
-			let request = https.request(options, function(response) {
-				let returnedData = '';
-				response.on('data', function(chunk) {
-					returnedData += chunk;
+				let request = https.request(options, function(response) {
+					let returnedData = '';
+					response.on('data', function(chunk) {
+						returnedData += chunk;
+					});
+
+					response.on('end', function() {
+						batchIndex++;
+						if (response.statusCode === 200) {
+							xmlParser.parseString(returnedData, function(err, batchResponse) {
+								logger.debug('Operation: ' + operation + ' to ' + contactBox.email + ' with success, batch ' + batchIndex);
+								logger.file('log-' + contactBox.email + batchIndex + '.log').debug(returnedData);
+								let contacts = googleContactsToEntity(batchResponse).contacts;
+								resolve(contacts);
+							});
+						} else {
+							reject('Google request error in some batch. Error status: ' + response.statusCode);
+						}
+					});
+
+					response.on('error', function(err) {
+						logger.debug('Google request error in some batch.');
+						reject(err);
+					});
 				});
 
-				response.on('end', function() {
-					batchIndex++;
-					if (response.statusCode === 200) {
-						logger.debug('New contacts added to ' + contactBox.email + ', batch ' + batchIndex);
-						logger.file('log-' + contactBox.email + batchIndex + '.log').debug(returnedData);
-						callback(null, returnedData);
-					} else {
-						callback('Error status: ' + response.statusCode);
-					}
+				request.on('error', function(err) {
+					logger.debug('Google request error in some batch.');
+					reject(err);
 				});
 
-				response.on('error', function(err) {
-					callback(err);
-				});
-			});
-
-			request.on('error', function(err) {
-				callback(err);
-			});
-
-			request.write(createContactsXml(contactBox.email, subcontacts));
-			request.end();
+				request.write(createBatchContactsXml(contactBox.email, subcontacts, operation));
+				request.end();
+			}).catch(function(err) {
+				return callback(err);
+			}));
 		}
+
+		Promise.all(promises).then(function(createdContacts) {
+			return callback(null, createdContacts);
+		}).catch(function(err) {
+			logger.debug('Error to execute all promises to add google contacts requests.');
+			logger.debug(err);
+			return callback(err);
+		});
 	}
 };
 
@@ -167,7 +214,7 @@ let refreshToken = function(contactBox, callback) {
 	});
 };
 
-let createContactsXml = function(email, contacts) {
+let createBatchContactsXml = function(email, contacts, operation) {
 	let writer = new XMLWriter();
 	writer.startDocument('1.0', 'UTF-8')
 		.startElement('feed')
@@ -177,21 +224,33 @@ let createContactsXml = function(email, contacts) {
 		.writeAttribute('xmlns:batch', 'http://schemas.google.com/gdata/batch');
 
 	contacts.forEach(function(contact) {
-		let names = contact.name.split(' ');
+		let names = !contact.name ? [] : contact.name.split(' ');
 		let familyName = names.slice(1, names.length).join(' ');
+		if (operation != 'create') {
+			contact.id = contact.id.replace('/base/', '/full/');
+		}
 
-		writer.startElement('entry')
-			.startElement('batch:id').text('create').endElement()
-			.startElement('batch:operation').writeAttribute('type', 'insert').endElement()
-			.startElement('category')
+		if (operation != 'create') {
+			writer.startElement('entry').writeAttribute('gd:etag', '*')
+				.startElement('batch:id').text(operation).endElement()
+				.startElement('batch:operation').writeAttribute('type', operation).endElement()
+				.startElement('id').text(contact.id).endElement();
+		} else {
+			writer.startElement('entry')
+				.startElement('batch:id').text(operation).endElement()
+				.startElement('batch:operation').writeAttribute('type', 'insert').endElement();
+		}
+		writer.startElement('category')
 			.writeAttribute('scheme', 'http://schemas.google.com/g/2005#kind')
 			.writeAttribute('term', 'http://schemas.google.com/g/2008#contact')
-			.endElement()
-			.startElement('gd:name')
-			.startElement('gd:fullName').text(contact.name).endElement()
-			.startElement('gd:givenName').text(names[0]).endElement()
-			.startElement('gd:familyName').text(familyName).endElement()
 			.endElement();
+		if (names.length > 0) {
+			writer.startElement('gd:name')
+				.startElement('gd:fullName').text(contact.name).endElement()
+				.startElement('gd:givenName').text(names[0]).endElement()
+				.startElement('gd:familyName').text(familyName).endElement()
+				.endElement();
+		}
 		if (contact.email !== undefined && contact.email !== null && contact.email !== '') {
 			writer.startElement('gd:email')
 				.writeAttribute('rel', 'http://schemas.google.com/g/2005#home')
@@ -219,7 +278,37 @@ let createContactsXml = function(email, contacts) {
 	return writer.toString();
 };
 
+let googleContactsToEntity = function(googleContacts) {
+	let contacts = [];
+	let deleted = [];
+	if (googleContacts.feed.entry) {
+		googleContacts.feed.entry.forEach(function(googleEntry) {
+			let contact = {};
+			contact.id = googleEntry.id[0];
+			if (googleEntry['gd:deleted']) {
+				deleted.push(contact);
+			} else {
+				if (googleEntry['gd:email']) {
+					contact.email = googleEntry['gd:email'][0].$.address;
+				}
+				if (googleEntry['gd:name']) {
+					contact.name = googleEntry['gd:name'][0]['gd:fullName'][0];
+				}
+				if (googleEntry['gd:phoneNumber']) {
+					contact.phoneNumber = googleEntry['gd:phoneNumber'][0].$.uri;
+				}
+				contacts.push(contact);
+			}
+		});
+	}
+
+	return {
+		contacts: contacts,
+		deleted: deleted
+	};
+}
+
 exports.generateAuthUrl = generateAuthUrl;
 exports.authenticate = authenticate;
 exports.getContacts = getContacts;
-exports.addContacts = addContacts;
+exports.operateContacts = operateContacts;

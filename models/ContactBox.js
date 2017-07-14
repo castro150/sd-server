@@ -13,7 +13,8 @@ let ContactBoxSchema = new mongoose.Schema({
 		id_token: String,
 		refresh_token: String,
 		token_type: String
-	}
+	},
+	lastCheck: Date
 });
 
 mongoose.model('ContactBox', ContactBoxSchema);
