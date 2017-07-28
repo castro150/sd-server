@@ -4,6 +4,7 @@ const express = require('express');
 const router = express.Router();
 
 const logger = require('config/logger.js');
+const ContectBoxesService = require('services/contactBoxes.js');
 const ContactsService = require('services/contacts.js');
 const GoogleService = require('services/google.js');
 
@@ -41,6 +42,12 @@ router.get('/entrypoint/force', function(req, res, next) {
 router.get('/entrypoint/stop', function(req, res, next) {
 	ContactsService.stopMainEmailWatcher();
 	res.json('Job stoped.');
+});
+
+router.put('/boxes/:id/contacts-ids', function(req, res, next) {
+	ContectBoxesService.updateContactsIds(req.params.id)
+		.then(() => res.json('Ids updated.'))
+		.catch((err) => next(err));
 });
 
 module.exports = router;
