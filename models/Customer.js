@@ -22,7 +22,7 @@ let CustomerSchema = new mongoose.Schema({
 	state: String,
 	cep: String,
 	email: String,
-	tel: String,
+	tels: [String],
 	contacts: [{
 		name: String,
 		email: String,
