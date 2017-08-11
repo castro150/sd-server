@@ -57,6 +57,8 @@ let CustomerSchema = new mongoose.Schema({
 	accessCode: String,
 	accessPassword: String,
 	municipalRegist: String,
+	withOtherMunRegist: Boolean,
+	citiesRegist: [String],
 	stateRegist: String,
 	stateRegistFree: Boolean,
 	shareCapital: String,
