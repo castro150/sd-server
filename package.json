@@ -7,7 +7,7 @@
     "start": "node ./bin/www",
     "test": "mocha ./specs/**/**.spec.js --require ./specs/helpers/bootstrap.js --reporter spec",
     "postinstall": "npm test",
-    "debug": "node-debug ./bin/www --debug-brk",
+    "debug": "node --inspect ./bin/www",
     "debug-log": "DEBUG=sd-server:server,express* node-debug ./bin/www --debug-brk",
     "debug-unit-tests": "mocha specs/** --require specs/helpers/bootstrap.js --reporter spec --debug-brk",
     "test-coverage": "istanbul cover _mocha specs/** --require specs/helpers/bootstrap.js --reporter spec",
