@@ -8,6 +8,8 @@ const ContectBoxesService = require('services/contactBoxes.js');
 const ContactsService = require('services/contacts.js');
 const GoogleService = require('services/google.js');
 
+ContactsService.watchMainEmail();
+
 router.get('/google/login', function(req, res, next) {
 	let url = GoogleService.generateAuthUrl();
 
@@ -48,6 +50,11 @@ router.put('/boxes/:id/contacts-ids', function(req, res, next) {
 	ContectBoxesService.updateContactsIds(req.params.id)
 		.then(() => res.json('Ids updated.'))
 		.catch((err) => next(err));
+});
+
+router.get('/teste', function(req, res, next) {
+	ContactsService.updateContactsByMainEmail2();
+	res.json('Testado.');
 });
 
 module.exports = router;

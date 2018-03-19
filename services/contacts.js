@@ -50,6 +50,69 @@ let stopMainEmailWatcher = function() {
 	}
 }
 
+let updateContactsByMainEmail2 = async function() {
+	if (!MAIN_EMAIL) {
+		return logger.debug('Missing google.contacts.main.email property.');
+	}
+
+	logger.debug('Getting main email box.');
+	let mainBox = await ContactBox.findOne({ email: MAIN_EMAIL }).exec();
+	if (!mainBox) {
+		return logger.debug(MAIN_EMAIL + ' (main email) not registered.');
+	}
+
+	logger.debug('Getting main email contacts.');
+	let allContacts = await GoogleService.getContacts2(mainBox, mainBox.lastCheck);
+
+	rollbackDate = mainBox.lastCheck;
+	updateLastChackDate(MAIN_EMAIL, new Date());
+
+	logger.debug('Getting database contacts.');
+	let savedContacts = await Contact.find().exec();
+	logger.debug(savedContacts.length + ' contacts found in database.');
+
+	let toUpdate = [];
+	let toCreate = allContacts.contacts.filter(function(elem1) {
+		return savedContacts.filter(function(elem2) {
+			if (elem2.id === elem1.id) {
+				elem1.otherIds = elem2.otherIds;
+				toUpdate.push(elem1);
+			}
+			return elem2.id === elem1.id;
+		}).length === 0;
+	});
+	let toDelete = {};
+	toDelete.savedIds = [];
+	allContacts.deleted.forEach(function(deleted) {
+		savedContacts.forEach(function(saved) {
+			if (deleted.id === saved.id) {
+				toDelete.savedIds.push(saved._id);
+			}
+		});
+	});
+
+	// TODO: fazer os 3 processos de forma assíncrona
+	if (toCreate.length > 0) {
+		logger.debug('Adding new contacts');
+		try {
+			await createContacts2(mainBox, toCreate);
+			// TODO: adicionar ao banco assíncrono
+		} catch (err) {
+			logger.debug('Error to create contacts:');
+			logger.debug(err.message);
+			rollbackLastCheckDate();
+		}
+	}
+
+	if (toUpdate.length > 0) {
+
+	}
+
+	if (toDelete.savedIds.length > 0) {
+
+	}
+};
+
 let updateContactsByMainEmail = function() {
 	if (!MAIN_EMAIL) {
 		logger.debug('Missing google.contacts.main.email property.');
@@ -364,6 +427,22 @@ let createContacts = function(contactBox, toCreate, callback) {
 	});
 };
 
+let createContacts2 = async function(contactBox, toCreate) {
+	let createdContacts = await GoogleService.operateContacts2(contactBox, toCreate, 'create');
+
+	createdContacts.forEach(function(contactArray) {
+		if (contactArray) {
+			contactArray.forEach(function(contact) {
+				toCreate.forEach(function(toSave) {
+					if(contact.email === toSave.email && contact.name === toSave.name) {
+						toSave.domainId = contact.id;
+					}
+				});
+			});
+		}
+	});
+};
+
 let updateContacts = function(contactBox, toUpdate, callback) {
 	GoogleService.operateContacts(contactBox, toUpdate, 'update', function(err, updatedContacts) {
 		if (err) {
@@ -387,4 +466,5 @@ let deleteContacts = function(contactBox, toDelete, callback) {
 exports.registerContactBox = registerContactBox;
 exports.watchMainEmail = watchMainEmail;
 exports.updateContactsByMainEmail = updateContactsByMainEmail;
+exports.updateContactsByMainEmail2 = updateContactsByMainEmail2;
 exports.stopMainEmailWatcher = stopMainEmailWatcher;

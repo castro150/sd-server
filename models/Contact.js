@@ -8,6 +8,7 @@ let ContactSchema = new mongoose.Schema({
 		email: String,
 		id: String
 	}],
+	domainId: String,
 	email: String,
 	name: String,
 	phoneNumber: String
