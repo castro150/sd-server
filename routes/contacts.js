@@ -52,6 +52,7 @@ router.put('/boxes/:id/contacts-ids', function(req, res, next) {
 		.catch((err) => next(err));
 });
 
+// TODO: remover
 router.get('/teste', function(req, res, next) {
 	ContactsService.updateContactsByMainEmail2();
 	res.json('Testado.');

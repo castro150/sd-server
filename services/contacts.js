@@ -67,6 +67,10 @@ let updateContactsByMainEmail2 = async function() {
 	rollbackDate = mainBox.lastCheck;
 	updateLastChackDate(MAIN_EMAIL, new Date());
 
+	if (allContacts.contacts.length === 0 && allContacts.deleted.length === 0) {
+		return logger.debug('No modified contacts in the main email.');
+	}
+
 	logger.debug('Getting database contacts.');
 	let savedContacts = await Contact.find().exec();
 	logger.debug(savedContacts.length + ' contacts found in database.');
@@ -75,7 +79,7 @@ let updateContactsByMainEmail2 = async function() {
 	let toCreate = allContacts.contacts.filter(function(elem1) {
 		return savedContacts.filter(function(elem2) {
 			if (elem2.id === elem1.id) {
-				elem1.otherIds = elem2.otherIds;
+				elem1.domainId = elem2.domainId;
 				toUpdate.push(elem1);
 			}
 			return elem2.id === elem1.id;
@@ -83,6 +87,7 @@ let updateContactsByMainEmail2 = async function() {
 	});
 	let toDelete = {};
 	toDelete.savedIds = [];
+	// TODO: ve se da pra melhorar isso usando reduce para ids e depois contains
 	allContacts.deleted.forEach(function(deleted) {
 		savedContacts.forEach(function(saved) {
 			if (deleted.id === saved.id) {
@@ -96,7 +101,18 @@ let updateContactsByMainEmail2 = async function() {
 		logger.debug('Adding new contacts');
 		try {
 			await createContacts2(mainBox, toCreate);
-			// TODO: adicionar ao banco assíncrono
+
+			logger.debug('Adding new contacts in database.');
+			Contact.collection.insert(toCreate, function(err, newContacts) {
+				if (err) {
+					logger.debug('Error to add contacts in database.');
+					logger.debug(err);
+
+					return rollbackLastCheckDate();
+				}
+
+				logger.debug(newContacts.ops.length + ' new contacts added to database.');
+			});
 		} catch (err) {
 			logger.debug('Error to create contacts:');
 			logger.debug(err.message);
@@ -105,7 +121,39 @@ let updateContactsByMainEmail2 = async function() {
 	}
 
 	if (toUpdate.length > 0) {
+		logger.debug('Updating contacts');
+		try {
+			// TODO: corrigir método para enviar para domínio
+			await updateContacts2(mainBox, toUpdate);
 
+			// TODO: ver porque não está adicionando
+			logger.debug('Updating contacts in database.');
+			let bulk = Contact.collection.initializeOrderedBulkOp();
+			toUpdate.forEach(function(update) {
+				bulk.find({ id: update.id }).update({
+					$set: {
+						name: update.name,
+						email: update.email,
+						phoneNumber: update.phoneNumber,
+						domainId: update.domainId
+					}
+				});
+			});
+			bulk.execute(function(err) {
+				if (err) {
+					logger.debug('Error to update contacts in database.');
+					logger.debug(err);
+
+					return rollbackLastCheckDate();
+				}
+
+				logger.debug('Updated contacts in database with success.');
+			});
+		} catch (err) {
+			logger.debug('Error to update contacts:');
+			logger.debug(err.message);
+			rollbackLastCheckDate();
+		}
 	}
 
 	if (toDelete.savedIds.length > 0) {
@@ -451,6 +499,10 @@ let updateContacts = function(contactBox, toUpdate, callback) {
 
 		callback(null, updatedContacts);
 	});
+};
+
+let updateContacts2 = async function(contactBox, toUpdate) {
+	await GoogleService.operateContacts2(contactBox, toUpdate, 'update');
 };
 
 let deleteContacts = function(contactBox, toDelete, callback) {
