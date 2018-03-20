@@ -87,11 +87,15 @@ let updateContactsByMainEmail2 = async function() {
 	});
 	let toDelete = {};
 	toDelete.savedIds = [];
+	toDelete.domainIds = [];
 	// TODO: ve se da pra melhorar isso usando reduce para ids e depois contains
 	allContacts.deleted.forEach(function(deleted) {
 		savedContacts.forEach(function(saved) {
 			if (deleted.id === saved.id) {
 				toDelete.savedIds.push(saved._id);
+				toDelete.domainIds.push({
+					domainId: saved.domainId
+				});
 			}
 		});
 	});
@@ -123,10 +127,8 @@ let updateContactsByMainEmail2 = async function() {
 	if (toUpdate.length > 0) {
 		logger.debug('Updating contacts');
 		try {
-			// TODO: corrigir método para enviar para domínio
 			await updateContacts2(mainBox, toUpdate);
 
-			// TODO: ver porque não está adicionando
 			logger.debug('Updating contacts in database.');
 			let bulk = Contact.collection.initializeOrderedBulkOp();
 			toUpdate.forEach(function(update) {
@@ -157,7 +159,24 @@ let updateContactsByMainEmail2 = async function() {
 	}
 
 	if (toDelete.savedIds.length > 0) {
+		await deleteContacts2(mainBox, toDelete.domainIds);
 
+		logger.debug('Deleting contacts in database.');
+		Contact.remove({
+			_id: {
+				$in: toDelete.savedIds
+			}
+		}, function(err) {
+			if (err) {
+				logger.debug('Error to delete contacts in database.');
+				logger.debug(err);
+
+				rollbackLastCheckDate();
+				return;
+			}
+
+			logger.debug('Deleted contacts in database with success.');
+		});
 	}
 };
 
@@ -513,6 +532,10 @@ let deleteContacts = function(contactBox, toDelete, callback) {
 
 		callback(null, deletedContacts);
 	});
+};
+
+let deleteContacts2 = async function(contactBox, toDelete) {
+	await GoogleService.operateContacts2(contactBox, toDelete, 'delete');
 };
 
 exports.registerContactBox = registerContactBox;

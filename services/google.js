@@ -389,15 +389,16 @@ let createBatchContactsXml2 = function(contacts, operation) {
 	contacts.forEach(function(contact) {
 		let names = !contact.name ? [] : contact.name.split(' ');
 		let familyName = names.slice(1, names.length).join(' ');
+		let contactId = contact.id;
 		if (operation != 'create') {
-			contact.id = contact.id.replace('/base/', '/full/');
+			contactId = contact.domainId.replace('/base/', '/full/');
 		}
 
 		if (operation != 'create') {
 			writer.startElement('entry').writeAttribute('gd:etag', '*')
 				.startElement('batch:id').text(operation).endElement()
 				.startElement('batch:operation').writeAttribute('type', operation).endElement()
-				.startElement('id').text(contact.id).endElement();
+				.startElement('id').text(contactId).endElement();
 		} else {
 			writer.startElement('entry')
 				.startElement('batch:id').text(operation).endElement()
