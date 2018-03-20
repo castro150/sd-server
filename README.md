@@ -1,7 +1,7 @@
 # sd-server
 
 ## Debugando a aplicação:
-1 - Executar node run debug
+1 - Executar npm run debug
 2 - Abrir o Chrome em http://localhost:9229/json/list
 3 - Abrir uma nova aba com o atributo "devtoolsFrontendUrl"
 

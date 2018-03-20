@@ -50,17 +50,13 @@ let authenticate = function(code, callback) {
 	});
 };
 
-let getContacts = function(contactBox, updatedMin, callback) {
-	let now = new Date();
-	if (now.getTime() >= contactBox.tokens.expiry_date) {
-		refreshToken(contactBox, function(err, refreshedContactBox) {
-			if (err) {
-				return callback(err);
-			}
+let getContacts = function(contactBox, updatedMin) {
+	let contactsPromise = new Promise(async (resolve, reject) => {
+		let now = new Date();
+		if (now.getTime() >= contactBox.tokens.expiry_date) {
+			contactBox = await refreshToken(contactBox);
+		}
 
-			return getContacts(refreshedContactBox, updatedMin, callback);
-		});
-	} else {
 		let path = '/m8/feeds/contacts/default/full?max-results=10000&showdeleted=true';
 		if (updatedMin) {
 			path += '&updated-min=' + updatedMin.toISOString();
@@ -88,40 +84,38 @@ let getContacts = function(contactBox, updatedMin, callback) {
 					xmlParser.parseString(returnedData, function(err, googleContacts) {
 						let allContacts = googleContactsToEntity(googleContacts);
 						logger.debug(allContacts.contacts.length + ' modified contacts found for ' + contactBox.email);
-						callback(null, allContacts);
+						resolve(allContacts);
 					});
 				} else {
-					callback('Error status: ' + response.statusCode);
+					reject('Error status: ' + response.statusCode);
 				}
 			});
 
 			response.on('error', function(err) {
-				callback(err);
+				reject(err);
 			});
 		});
 
 		request.on('error', function(err) {
-			callback(err);
+			reject(err);
 		});
 
 		request.end();
-	}
+	});
+
+	return contactsPromise;
 };
 
-let operateContacts = function(contactBox, contacts, operation, callback) {
-	let now = new Date();
-	if (now.getTime() >= contactBox.tokens.expiry_date) {
-		refreshToken(contactBox, function(err, refreshedContactBox) {
-			if (err) {
-				return callback(err);
-			}
+let operateContacts = function(contactBox, contacts, operation) {
+	let operatePromise = new Promise(async (resolve, reject) => {
+		let now = new Date();
+		if (now.getTime() >= contactBox.tokens.expiry_date) {
+			contactBox = await refreshToken(contactBox);
+		}
 
-			return operateContacts(refreshedContactBox, contacts, operation, callback);
-		});
-	} else {
 		let options = {
 			host: 'www.google.com',
-			path: '/m8/feeds/contacts/default/full/batch',
+			path: '/m8/feeds/contacts/andreacontabilidade.com/full/batch',
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/atom+xml',
@@ -132,9 +126,9 @@ let operateContacts = function(contactBox, contacts, operation, callback) {
 
 		let batchIndex = 0;
 		let promises = [];
-		logger.debug('Sending contacts to Google: ' + contactBox.email + '. Operation: ' + operation);
+		logger.debug('Sending contacts to Google Domain. Operation: ' + operation);
 		for (let i = 0, j = contacts.length; i < j; i += 100) {
-			promises.push(new Promise(function(resolve, reject) {
+			promises.push(new Promise(function(resolveChunk, rejectChunk) {
 				let subcontacts = contacts.slice(i, i + 100);
 
 				let request = https.request(options, function(response) {
@@ -147,74 +141,80 @@ let operateContacts = function(contactBox, contacts, operation, callback) {
 						batchIndex++;
 						if (response.statusCode === 200) {
 							xmlParser.parseString(returnedData, function(err, batchResponse) {
-								logger.debug('Operation: ' + operation + ' to ' + contactBox.email + ' with success, batch ' + batchIndex);
-								logger.file('log-' + contactBox.email + batchIndex + '.log').debug(returnedData);
+								logger.debug('Operation: ' + operation + ' with success, batch ' + batchIndex);
+								logger.file('log-' + batchIndex + '.log').debug(returnedData);
 								let contacts = googleContactsToEntity(batchResponse).contacts;
-								resolve(contacts);
+								resolveChunk(contacts);
 							});
 						} else {
-							reject('Google request error in some batch. Error status: ' + response.statusCode);
+							rejectChunk('Google request error in some batch. Error status: ' + response.statusCode);
 						}
 					});
 
 					response.on('error', function(err) {
 						logger.debug('Google request error in some batch.');
-						reject(err);
+						rejectChunk(err);
 					});
 				});
 
 				request.on('error', function(err) {
 					logger.debug('Google request error in some batch.');
-					reject(err);
+					rejectChunk(err);
 				});
 
-				request.write(createBatchContactsXml(contactBox.email, subcontacts, operation));
+				request.write(createBatchContactsXml(subcontacts, operation));
 				request.end();
 			}).catch(function(err) {
-				return callback(err);
+				return rejectChunk(err);
 			}));
 		}
 
 		Promise.all(promises).then(function(createdContacts) {
-			return callback(null, createdContacts);
+			return resolve(createdContacts);
 		}).catch(function(err) {
 			logger.debug('Error to execute all promises to add google contacts requests.');
 			logger.debug(err);
-			return callback(err);
-		});
-	}
-};
-
-let refreshToken = function(contactBox, callback) {
-	logger.debug('Refreshing token for ' + contactBox.email);
-	let oauth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URL);
-	oauth2Client.setCredentials(contactBox.tokens);
-	oauth2Client.refreshAccessToken(function(err, newTokens) {
-		if (err) {
-			return callback(err);
-		}
-
-		logger.debug('Saving new token for ' + contactBox.email);
-		ContactBox.findOneAndUpdate({
-			email: contactBox.email
-		}, {
-			$set: {
-				tokens: newTokens
-			}
-		}, {
-			new: true
-		}, function(err, updatedContactBox) {
-			if (err) {
-				return callback(err);
-			}
-
-			logger.debug('Success to save new token for ' + contactBox.email);
-			return callback(null, updatedContactBox);
+			return reject(err);
 		});
 	});
+
+	return operatePromise;
 };
 
-let createBatchContactsXml = function(email, contacts, operation) {
+let refreshToken = function(contactBox) {
+	let refreshTokenPromise = new Promise((resolve, reject) => {
+		logger.debug('Refreshing token for ' + contactBox.email);
+		let oauth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URL);
+		oauth2Client.setCredentials(contactBox.tokens);
+		oauth2Client.refreshAccessToken(function(err, newTokens) {
+			if (err) {
+				return reject(err);
+			}
+
+			logger.debug('Saving new token for ' + contactBox.email);
+			ContactBox.findOneAndUpdate({
+				email: contactBox.email
+			}, {
+				$set: {
+					tokens: newTokens
+				}
+			}, {
+				new: true
+			}, function(err, updatedContactBox) {
+				if (err) {
+					return reject(err);
+				}
+
+				logger.debug('Success to save new token for ' + contactBox.email);
+				return resolve(updatedContactBox);
+			});
+		});
+	});
+
+	return refreshTokenPromise;
+};
+
+let createBatchContactsXml = function(contacts, operation) {
 	let writer = new XMLWriter();
 	writer.startDocument('1.0', 'UTF-8')
 		.startElement('feed')
@@ -226,15 +226,16 @@ let createBatchContactsXml = function(email, contacts, operation) {
 	contacts.forEach(function(contact) {
 		let names = !contact.name ? [] : contact.name.split(' ');
 		let familyName = names.slice(1, names.length).join(' ');
+		let contactId = contact.id;
 		if (operation != 'create') {
-			contact.id = contact.id.replace('/base/', '/full/');
+			contactId = contact.domainId.replace('/base/', '/full/');
 		}
 
 		if (operation != 'create') {
 			writer.startElement('entry').writeAttribute('gd:etag', '*')
 				.startElement('batch:id').text(operation).endElement()
 				.startElement('batch:operation').writeAttribute('type', operation).endElement()
-				.startElement('id').text(contact.id).endElement();
+				.startElement('id').text(contactId).endElement();
 		} else {
 			writer.startElement('entry')
 				.startElement('batch:id').text(operation).endElement()
@@ -265,10 +266,6 @@ let createBatchContactsXml = function(email, contacts, operation) {
 				.text(contact.phoneNumber)
 				.endElement();
 		}
-		writer.startElement('gContact:groupMembershipInfo')
-			.writeAttribute('deleted', 'false')
-			.writeAttribute('href', 'http://www.google.com/m8/feeds/groups/' + email + '/base/6')
-			.endElement();
 		writer.endElement();
 	});
 
@@ -295,7 +292,7 @@ let googleContactsToEntity = function(googleContacts) {
 					contact.name = googleEntry['gd:name'][0]['gd:fullName'][0];
 				}
 				if (googleEntry['gd:phoneNumber']) {
-					contact.phoneNumber = googleEntry['gd:phoneNumber'][0].$.uri;
+					contact.phoneNumber = googleEntry['gd:phoneNumber'][0]._;
 				}
 				contacts.push(contact);
 			}

@@ -67,5 +67,6 @@ app.use(function(err, req, res, next) {
 
 module.exports = app;
 
+mongoose.Promise = global.Promise;
 let dbConnection = process.env.MONGODB_URI || properties.get('mongodb.db.uri');
-mongoose.connect(dbConnection);
+mongoose.connect(dbConnection, { useMongoClient: true });

@@ -8,6 +8,8 @@ const ContectBoxesService = require('services/contactBoxes.js');
 const ContactsService = require('services/contacts.js');
 const GoogleService = require('services/google.js');
 
+ContactsService.watchMainEmail();
+
 router.get('/google/login', function(req, res, next) {
 	let url = GoogleService.generateAuthUrl();
 
