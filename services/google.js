@@ -226,6 +226,9 @@ let createBatchContactsXml = function(contacts, operation) {
 	contacts.forEach(function(contact) {
 		let names = !contact.name ? [] : contact.name.split(' ');
 		let familyName = names.slice(1, names.length).join(' ');
+		if (!familyName || familyName === undefined || familyName.length < 1) {
+			familyName = ' ';
+		}
 		let contactId = contact.id;
 		if (operation != 'create') {
 			contactId = contact.domainId.replace('/base/', '/full/');
