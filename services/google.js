@@ -165,7 +165,7 @@ let operateContacts = function(contactBox, contacts, operation) {
 				request.write(createBatchContactsXml(subcontacts, operation));
 				request.end();
 			}).catch(function(err) {
-				return rejectChunk(err);
+				return reject(err);
 			}));
 		}
 
